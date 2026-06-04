@@ -1,0 +1,21 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Home Directory Backup Timer
+#  Fires daily at 02:00 with a 30-minute random jitter
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=SystemBackup — Daily Home Backup Timer
+Documentation=https://github.com/systembackup/systembackup
+
+[Timer]
+# Fire daily at 02:00 local time
+OnCalendar=*-*-* 02:00:00
+
+# If the machine was off at 02:00, run on next boot
+Persistent=true
+
+# Spread load across a 30-minute window to avoid thundering herd
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target

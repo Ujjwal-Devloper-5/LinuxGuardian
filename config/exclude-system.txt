@@ -1,0 +1,76 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Full System Exclude Patterns
+#  These paths are EXCLUDED from / (root) system backups.
+#  One pattern per line. Lines starting with # are comments.
+# ═══════════════════════════════════════════════════════════════
+
+# ── Virtual Filesystems (kernel-generated, NOT real files) ────
+/dev/*
+/proc/*
+/sys/*
+/run/*
+
+# ── Temporary Files ───────────────────────────────────────────
+/tmp/*
+/var/tmp/*
+/var/lock/*
+/var/run/*
+
+# ── Mount Points & External Media ────────────────────────────
+/mnt/*
+/media/*
+/cdrom/*
+
+# ── System Recovery ───────────────────────────────────────────
+/lost+found
+
+# ── Swap ──────────────────────────────────────────────────────
+/swapfile
+/swap.img
+/swap/*
+
+# ── Home Directory (backed up separately) ────────────────────
+/home/*
+
+# ── Package Manager Caches ────────────────────────────────────
+/var/cache/apt/archives/*
+/var/cache/apt/pkgcache.bin
+/var/cache/apt/srcpkgcache.bin
+/var/cache/pacman/pkg/*
+/var/cache/dnf/*
+/var/cache/yum/*
+/var/cache/zypp/*
+
+# ── Backup Destination (prevent recursion) ────────────────────
+/var/lib/sysbackup/repos/*
+/var/lib/sysbackup/cache/*
+
+# ── Snap Caches ───────────────────────────────────────────────
+/snap/*
+/var/snap/*/common/cache
+
+# ── Docker & Container Runtime ────────────────────────────────
+/var/lib/docker/*
+/var/lib/containerd/*
+/var/lib/containers/*
+/var/lib/lxc/*
+/var/lib/lxd/*
+
+# ── Virtual Machine Images ───────────────────────────────────
+/var/lib/libvirt/images/*
+
+# ── Log Files (optional — uncomment to exclude) ──────────────
+# /var/log/*
+
+# ── Systemd Journal (can be large) ───────────────────────────
+/var/log/journal/*
+
+# ── Crash Dumps ───────────────────────────────────────────────
+/var/crash/*
+/var/lib/systemd/coredump/*
+
+# ── Network Manager Runtime ──────────────────────────────────
+/var/lib/NetworkManager/*
+
+# ── CACHEDIR.TAG marked directories ──────────────────────────
+# restic automatically respects these with --exclude-caches

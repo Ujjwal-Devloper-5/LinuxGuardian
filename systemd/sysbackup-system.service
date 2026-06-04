@@ -1,0 +1,36 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Full System Backup Service
+#  Triggered by sysbackup-system.timer (weekly)
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=SystemBackup — Full System Backup
+Documentation=https://github.com/systembackup/systembackup
+After=network-online.target
+Wants=network-online.target
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sysbackup run --system
+
+# ── Resource Limits ───────────────────────────────────────────
+Nice=19
+IOSchedulingClass=idle
+CPUQuota=50%
+IOWeight=20
+MemoryMax=1G
+
+# ── Timeout ───────────────────────────────────────────────────
+# 6 hours for a full system backup
+TimeoutStartSec=21600
+
+# ── Logging ───────────────────────────────────────────────────
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sysbackup-system
+
+# ── Environment ───────────────────────────────────────────────
+Environment=SYSBACKUP_BACKUP_TYPE=system
+Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/sysbackup
+Environment=SYSBACKUP_CONFIG_FILE=/etc/sysbackup/sysbackup.conf

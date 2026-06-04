@@ -1,0 +1,21 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Full System Backup Timer
+#  Fires weekly on Sunday at 03:00 with a 1-hour random jitter
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=SystemBackup — Weekly System Backup Timer
+Documentation=https://github.com/systembackup/systembackup
+
+[Timer]
+# Fire every Sunday at 03:00 local time
+OnCalendar=Sun *-*-* 03:00:00
+
+# If the machine was off at the scheduled time, run on next boot
+Persistent=true
+
+# Spread load across a 1-hour window
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

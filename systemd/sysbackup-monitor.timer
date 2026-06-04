@@ -1,0 +1,18 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Metrics Collector Timer
+#  Fires every 5 minutes to gather system health metrics
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=SystemBackup — Metrics Collector Timer (every 5 min)
+Documentation=https://github.com/systembackup/systembackup
+
+[Timer]
+# Fire every 5 minutes
+OnCalendar=*:0/5
+
+# Not persistent — missing a few samples is fine
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Home Directory Backup Service
+#  Triggered by sysbackup-home.timer (daily)
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=SystemBackup — Home Directory Backup
+Documentation=https://github.com/systembackup/systembackup
+After=network-online.target
+Wants=network-online.target
+ConditionACPower=true
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sysbackup run --home
+
+# ── Security & Privilege Drop ─────────────────────────────────
+# Uncomment the User line below and replace YOUR_USERNAME to run home 
+# backups without root privileges (Principle of Least Privilege).
+# Note: Ensure your user has read access to all files in HOME_SOURCES.
+# User=YOUR_USERNAME
+
+# ── Resource Limits ───────────────────────────────────────────
+# Run at lowest priority so desktop stays responsive
+Nice=19
+IOSchedulingClass=idle
+CPUQuota=50%
+IOWeight=20
+MemoryMax=1G
+
+# ── Timeout ───────────────────────────────────────────────────
+# 3 hours should be plenty for a home backup
+TimeoutStartSec=10800
+
+# ── Logging ───────────────────────────────────────────────────
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sysbackup-home
+
+# ── Environment ───────────────────────────────────────────────
+Environment=SYSBACKUP_BACKUP_TYPE=home
+Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/sysbackup
+Environment=SYSBACKUP_CONFIG_FILE=/etc/sysbackup/sysbackup.conf

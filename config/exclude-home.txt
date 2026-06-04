@@ -1,0 +1,81 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Home Directory Exclude Patterns
+#  These paths are EXCLUDED from /home backups.
+#  One pattern per line. Lines starting with # are comments.
+#  Patterns are relative to the backup root.
+# ═══════════════════════════════════════════════════════════════
+
+# ── Browser Caches ────────────────────────────────────────────
+.mozilla/firefox/*/cache2
+.mozilla/firefox/*/datareporting
+.mozilla/firefox/*/crashes
+.config/google-chrome/*/Cache
+.config/google-chrome/*/Code Cache
+.config/google-chrome/*/GPUCache
+.config/google-chrome/*/Service Worker/CacheStorage
+.config/chromium/*/Cache
+.config/chromium/*/Code Cache
+.config/BraveSoftware/*/Cache
+.config/vivaldi/*/Cache
+
+# ── System Caches ─────────────────────────────────────────────
+.cache
+.thumbnails
+.local/share/Trash
+.local/share/recently-used.xbel
+
+# ── Package Manager Caches ────────────────────────────────────
+.npm/_cacache
+.yarn/cache
+.cargo/registry
+.gradle/caches
+.m2/repository
+.nuget/packages
+.cache/pip
+
+# ── Development Artifacts ─────────────────────────────────────
+node_modules
+__pycache__
+*.pyc
+.venv
+.tox
+.mypy_cache
+.pytest_cache
+.ruff_cache
+target/debug
+target/release
+build
+dist
+*.egg-info
+
+# ── IDE & Editor Caches ──────────────────────────────────────
+.vscode-server
+.idea
+*.swp
+*.swo
+*~
+
+# ── Container & VM Images ────────────────────────────────────
+*.qcow2
+*.vmdk
+*.vdi
+*.vhd
+*.raw
+.docker
+.local/share/containers
+
+# ── Miscellaneous Large Files ─────────────────────────────────
+.local/share/Steam/steamapps/common
+.local/share/Steam/steamapps/downloading
+.local/share/lutris
+snap/*/common/.cache
+
+# ── Electron App Caches ──────────────────────────────────────
+.config/Code/CachedData
+.config/Code/CachedExtensionVSIXs
+.config/Code/Cache
+.config/discord/Cache
+.config/discord/Code Cache
+.config/Slack/Cache
+.config/Slack/Code Cache
+.config/teams-for-linux/Cache

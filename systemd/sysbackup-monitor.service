@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════════
+#  SystemBackup — Metrics Collector Service
+#  Lightweight oneshot that gathers system/backup health metrics
+#  Triggered by sysbackup-monitor.timer (every 5 minutes)
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=SystemBackup — Metrics Collector
+Documentation=https://github.com/systembackup/systembackup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sysbackup metrics-collect
+
+# ── Resource Limits ───────────────────────────────────────────
+# Only Nice — no CPU/IO quotas needed for this fast job
+Nice=19
+
+# ── Timeout ───────────────────────────────────────────────────
+# Should finish in seconds; 60s is a generous safety net
+TimeoutStartSec=60
+
+# ── Logging ───────────────────────────────────────────────────
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sysbackup-monitor
+
+# ── Environment ───────────────────────────────────────────────
+Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/sysbackup
+Environment=SYSBACKUP_CONFIG_FILE=/etc/sysbackup/sysbackup.conf
