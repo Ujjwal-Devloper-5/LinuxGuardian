@@ -1,16 +1,16 @@
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Metrics Collector Service
+#  LinuxGuardian — Metrics Collector Service
 #  Lightweight oneshot that gathers system/backup health metrics
-#  Triggered by sysbackup-monitor.timer (every 5 minutes)
+#  Triggered by linuxguardian-monitor.timer (every 5 minutes)
 # ═══════════════════════════════════════════════════════════════
 
 [Unit]
-Description=SystemBackup — Metrics Collector
+Description=LinuxGuardian — Metrics Collector
 Documentation=https://github.com/systembackup/systembackup
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/sysbackup metrics-collect
+ExecStart=/usr/local/bin/linuxguardian metrics-collect
 
 # ── Resource Limits ───────────────────────────────────────────
 # Only Nice — no CPU/IO quotas needed for this fast job
@@ -23,8 +23,8 @@ TimeoutStartSec=60
 # ── Logging ───────────────────────────────────────────────────
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=sysbackup-monitor
+SyslogIdentifier=linuxguardian-monitor
 
 # ── Environment ───────────────────────────────────────────────
-Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/sysbackup
-Environment=SYSBACKUP_CONFIG_FILE=/etc/sysbackup/sysbackup.conf
+Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/linuxguardian
+Environment=SYSBACKUP_CONFIG_FILE=/etc/linuxguardian/linuxguardian.conf

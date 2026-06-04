@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Full System Exclude Patterns
+#  LinuxGuardian — Full System Exclude Patterns
 #  These paths are EXCLUDED from / (root) system backups.
 #  One pattern per line. Lines starting with # are comments.
 # ═══════════════════════════════════════════════════════════════
@@ -42,8 +42,8 @@
 /var/cache/zypp/*
 
 # ── Backup Destination (prevent recursion) ────────────────────
-/var/lib/sysbackup/repos/*
-/var/lib/sysbackup/cache/*
+/var/lib/linuxguardian/repos/*
+/var/lib/linuxguardian/cache/*
 
 # ── Snap Caches ───────────────────────────────────────────────
 /snap/*

@@ -1,10 +1,10 @@
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Home Directory Backup Service
-#  Triggered by sysbackup-home.timer (daily)
+#  LinuxGuardian — Home Directory Backup Service
+#  Triggered by linuxguardian-home.timer (daily)
 # ═══════════════════════════════════════════════════════════════
 
 [Unit]
-Description=SystemBackup — Home Directory Backup
+Description=LinuxGuardian — Home Directory Backup
 Documentation=https://github.com/systembackup/systembackup
 After=network-online.target
 Wants=network-online.target
@@ -12,7 +12,7 @@ ConditionACPower=true
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/sysbackup run --home
+ExecStart=/usr/local/bin/linuxguardian run --home
 
 # ── Security & Privilege Drop ─────────────────────────────────
 # Uncomment the User line below and replace YOUR_USERNAME to run home 
@@ -35,9 +35,9 @@ TimeoutStartSec=10800
 # ── Logging ───────────────────────────────────────────────────
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=sysbackup-home
+SyslogIdentifier=linuxguardian-home
 
 # ── Environment ───────────────────────────────────────────────
 Environment=SYSBACKUP_BACKUP_TYPE=home
-Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/sysbackup
-Environment=SYSBACKUP_CONFIG_FILE=/etc/sysbackup/sysbackup.conf
+Environment=SYSBACKUP_LIB_DIR=/usr/local/lib/linuxguardian
+Environment=SYSBACKUP_CONFIG_FILE=/etc/linuxguardian/linuxguardian.conf

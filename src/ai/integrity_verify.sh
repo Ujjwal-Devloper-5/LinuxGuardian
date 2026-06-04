@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Integrity Verification Module
+#  LinuxGuardian — Integrity Verification Module
 #  3-tier rotating checksum verification system.
 #  Tier 1: Every backup  — repo structure check
 #  Tier 2: Weekly rotation — read-data subset (1/7 per day)
@@ -10,12 +10,12 @@
 set -euo pipefail
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
 readonly INTEGRITY_MODULE_VERSION="1.0.0"
-readonly VERIFICATION_HISTORY="${DATA_DIR:-/var/lib/sysbackup}/data/verification_history.log"
-readonly VERIFICATION_RESTORE_DIR="${DATA_DIR:-/var/lib/sysbackup}/cache/verify_restore"
+readonly VERIFICATION_HISTORY="${DATA_DIR:-/var/lib/linuxguardian}/data/verification_history.log"
+readonly VERIFICATION_RESTORE_DIR="${DATA_DIR:-/var/lib/linuxguardian}/cache/verify_restore"
 
 # ── Configurable Parameters ──────────────────────────────────
 VERIFY_TIER2_DAY_OF_WEEK="${VERIFY_TIER2_DAY_OF_WEEK:-}"  # Empty = auto (use current day)
@@ -334,7 +334,7 @@ get_verification_report() {
     if [[ ! -f "$VERIFICATION_HISTORY" ]] || [[ ! -s "$VERIFICATION_HISTORY" ]]; then
         echo ""
         echo "  🔍 No verification history available yet."
-        echo "     Run 'sysbackup verify' to perform a check."
+        echo "     Run 'linuxguardian verify' to perform a check."
         echo ""
         return 0
     fi

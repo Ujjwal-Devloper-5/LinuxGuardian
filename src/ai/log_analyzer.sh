@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Log Analyzer AI
+#  LinuxGuardian — Log Analyzer AI
 #  Multi-pattern scanner and trend detection for backup logs.
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
-readonly ERROR_TRENDS_FILE="${SYSBACKUP_DATA_DIR:-/var/lib/sysbackup}/data/error_trends.csv"
+readonly ERROR_TRENDS_FILE="${SYSBACKUP_DATA_DIR:-/var/lib/linuxguardian}/data/error_trends.csv"
 
 # ── Multi-pattern log scanner ──────────────────────────────────
 analyze_log() {
@@ -134,7 +134,7 @@ get_log_analysis_report() {
     
     if [[ -z "$log_file" ]]; then
         # Find latest log
-        log_file=$(find "${SYSBACKUP_LOG_DIR:-/var/lib/sysbackup/logs}" -name "sysbackup-*.log" -type f -printf "%T@ %p\n" | sort -rn | head -1 | cut -d' ' -f2)
+        log_file=$(find "${SYSBACKUP_LOG_DIR:-/var/lib/linuxguardian/logs}" -name "linuxguardian-*.log" -type f -printf "%T@ %p\n" | sort -rn | head -1 | cut -d' ' -f2)
     fi
     
     if [[ -z "$log_file" || ! -f "$log_file" ]]; then

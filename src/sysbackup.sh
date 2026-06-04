@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Main Backup Orchestrator
+#  LinuxGuardian — Main Backup Orchestrator
 #  This is the core backup pipeline that runs all phases:
 #    Pre-flight → Idle Check → Backup → AI Analysis →
 #    Cloud Sync → Retention → Notification
@@ -9,7 +9,7 @@
 set -euo pipefail
 
 # ── Resolve library path ──────────────────────────────────────
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
 
 # ── Source all modules ────────────────────────────────────────
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
@@ -387,7 +387,7 @@ phase_notification() {
         fi
     else
         if [[ "${NOTIFY_ON_FAILURE:-true}" == "true" ]]; then
-            send_failure_notification "Backup failed. Check logs: ${SYSBACKUP_LOG_FILE:-/var/lib/sysbackup/logs/}"
+            send_failure_notification "Backup failed. Check logs: ${SYSBACKUP_LOG_FILE:-/var/lib/linuxguardian/logs/}"
             log_info "Failure notification sent"
         fi
     fi
@@ -401,7 +401,7 @@ phase_cleanup() {
     rotate_logs
 
     # Update last backup timestamp marker
-    touch "${DATA_DIR:-/var/lib/sysbackup}/data/last_backup_timestamp"
+    touch "${DATA_DIR:-/var/lib/linuxguardian}/data/last_backup_timestamp"
 
     # Release lock
     lock_release
@@ -512,7 +512,7 @@ run_metrics_collection() {
 
 get_mean_duration() {
     local backup_type="$1"
-    local history_file="${DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
+    local history_file="${DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
 
     if [[ ! -f "$history_file" ]]; then
         echo 0
@@ -537,7 +537,7 @@ get_mean_duration() {
 
 get_last_backup_size() {
     local repo_path="$1"
-    local history_file="${DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
+    local history_file="${DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
 
     if [[ ! -f "$history_file" ]]; then
         echo 0
@@ -571,7 +571,7 @@ get_latest_snapshot_id() {
 #  ENTRY POINT (when called directly)
 # ═══════════════════════════════════════════════════════════════
 
-# This file is primarily sourced by sysbackup-cli.sh
+# This file is primarily sourced by linuxguardian-cli.sh
 # But can be run directly for testing:
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     setup_traps

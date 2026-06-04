@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Backup Engine Module
+#  LinuxGuardian — Backup Engine Module
 #  Core restic backup operations: home/system backups, snapshot
 #  management, repo initialization, integrity checks.
 # ═══════════════════════════════════════════════════════════════
@@ -8,10 +8,10 @@
 set -euo pipefail
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly BACKUP_SIZES_LOG="${SYSBACKUP_DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
+readonly BACKUP_SIZES_LOG="${SYSBACKUP_DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
 readonly BACKUP_ENGINE_VERSION="1.0.0"
 
 # ═══════════════════════════════════════════════════════════════
@@ -144,7 +144,7 @@ backup_home() {
 
     # Validate
     if [[ -z "$repo_path" ]]; then
-        die "HOME_REPO is not configured. Set it in sysbackup.conf."
+        die "HOME_REPO is not configured. Set it in linuxguardian.conf."
     fi
 
     setup_restic_env "$repo_path"
@@ -212,7 +212,7 @@ backup_system() {
 
     # Validate
     if [[ -z "$repo_path" ]]; then
-        die "SYSTEM_REPO is not configured. Set it in sysbackup.conf."
+        die "SYSTEM_REPO is not configured. Set it in linuxguardian.conf."
     fi
 
     setup_restic_env "$repo_path"
@@ -275,7 +275,7 @@ _run_backup() {
 
     # Capture JSON output into a temp file
     local json_output
-    json_output=$(mktemp /tmp/sysbackup-json-XXXXXX.json)
+    json_output=$(mktemp /tmp/linuxguardian-json-XXXXXX.json)
     # Ensure cleanup
     trap "rm -f '$json_output'" RETURN
 

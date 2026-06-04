@@ -1,10 +1,10 @@
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Home Directory Backup Timer
+#  LinuxGuardian — Home Directory Backup Timer
 #  Fires daily at 02:00 with a 30-minute random jitter
 # ═══════════════════════════════════════════════════════════════
 
 [Unit]
-Description=SystemBackup — Daily Home Backup Timer
+Description=LinuxGuardian — Daily Home Backup Timer
 Documentation=https://github.com/systembackup/systembackup
 
 [Timer]

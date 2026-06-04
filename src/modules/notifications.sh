@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Notifications Module
+#  LinuxGuardian — Notifications Module
 #  Desktop notifications, sound playback, and backup reports.
 #  Handles X11/Wayland, root→user session bridging, PipeWire/
 #  PulseAudio detection, and headless fallback via wall(1).
@@ -9,12 +9,12 @@
 set -euo pipefail
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
 readonly NOTIFICATIONS_VERSION="1.0.0"
 readonly DEFAULT_NOTIFY_TIMEOUT=10000  # 10 seconds in milliseconds
-readonly APP_NAME="SystemBackup"
+readonly APP_NAME="LinuxGuardian"
 
 # ── Notification Icons ────────────────────────────────────────
 readonly ICON_SUCCESS="dialog-information"

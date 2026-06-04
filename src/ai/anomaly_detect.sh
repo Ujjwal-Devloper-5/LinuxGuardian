@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — AI Anomaly Detection Module
+#  LinuxGuardian — AI Anomaly Detection Module
 #  Z-score based backup size & file count anomaly detection.
 #  Detects: ransomware (sudden size spike), data loss (sudden drop)
 # ═══════════════════════════════════════════════════════════════
@@ -8,16 +8,16 @@
 set -euo pipefail
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
 readonly ANOMALY_MODULE_VERSION="1.0.0"
-readonly BACKUP_SIZES_LOG="${DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
-readonly FILE_COUNTS_LOG="${DATA_DIR:-/var/lib/sysbackup}/data/file_counts.log"
+readonly BACKUP_SIZES_LOG="${DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
+readonly FILE_COUNTS_LOG="${DATA_DIR:-/var/lib/linuxguardian}/data/file_counts.log"
 readonly ANOMALY_HISTORY_SAMPLES=30
 
 # ── Configurable Thresholds ──────────────────────────────────
-# Can be set in sysbackup.conf or environment
+# Can be set in linuxguardian.conf or environment
 ANOMALY_ZSCORE_WARN="${ANOMALY_ZSCORE_WARN:-2.0}"
 ANOMALY_ZSCORE_CRITICAL="${ANOMALY_ZSCORE_CRITICAL:-3.0}"
 

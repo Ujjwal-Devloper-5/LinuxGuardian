@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Shared Utilities & Logging
+#  LinuxGuardian — Shared Utilities & Logging
 #  All modules source this file for common functionality.
 # ═══════════════════════════════════════════════════════════════
 
@@ -8,7 +8,7 @@ set -euo pipefail
 
 # ── Version ───────────────────────────────────────────────────
 readonly SYSBACKUP_VERSION="1.0.0"
-readonly SYSBACKUP_NAME="SystemBackup"
+readonly SYSBACKUP_NAME="LinuxGuardian"
 
 # ── Color Codes (only if terminal supports it) ────────────────
 if [[ -t 1 ]] && command -v tput &>/dev/null && [[ $(tput colors 2>/dev/null || echo 0) -ge 8 ]]; then
@@ -29,11 +29,11 @@ else
 fi
 
 # ── Default Paths ─────────────────────────────────────────────
-readonly DEFAULT_CONFIG_FILE="/etc/sysbackup/sysbackup.conf"
-readonly DEFAULT_DATA_DIR="/var/lib/sysbackup"
-readonly DEFAULT_LOG_DIR="/var/lib/sysbackup/logs"
-readonly DEFAULT_LIB_DIR="/usr/local/lib/sysbackup"
-readonly DEFAULT_LOCK_FILE="/var/run/sysbackup.lock"
+readonly DEFAULT_CONFIG_FILE="/etc/linuxguardian/linuxguardian.conf"
+readonly DEFAULT_DATA_DIR="/var/lib/linuxguardian"
+readonly DEFAULT_LOG_DIR="/var/lib/linuxguardian/logs"
+readonly DEFAULT_LIB_DIR="/usr/local/lib/linuxguardian"
+readonly DEFAULT_LOCK_FILE="/var/run/linuxguardian.lock"
 
 # ── Globals (set after config load) ───────────────────────────
 SYSBACKUP_CONFIG_FILE="${SYSBACKUP_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
@@ -103,7 +103,7 @@ init_log_file() {
     local backup_type="${1:-general}"
     local ts
     ts=$(date '+%Y-%m-%d_%H%M%S')
-    SYSBACKUP_LOG_FILE="${SYSBACKUP_LOG_DIR}/sysbackup-${backup_type}-${ts}.log"
+    SYSBACKUP_LOG_FILE="${SYSBACKUP_LOG_DIR}/linuxguardian-${backup_type}-${ts}.log"
     mkdir -p "$SYSBACKUP_LOG_DIR"
     touch "$SYSBACKUP_LOG_FILE"
     log_info "Log file initialized: $SYSBACKUP_LOG_FILE"
@@ -115,14 +115,14 @@ rotate_logs() {
     local count
     
     # 1. Rotate by age
-    count=$(find "$SYSBACKUP_LOG_DIR" -name "sysbackup-*.log" -mtime "+${retention_days}" 2>/dev/null | wc -l)
+    count=$(find "$SYSBACKUP_LOG_DIR" -name "linuxguardian-*.log" -mtime "+${retention_days}" 2>/dev/null | wc -l)
     if [[ "$count" -gt 0 ]]; then
-        find "$SYSBACKUP_LOG_DIR" -name "sysbackup-*.log" -mtime "+${retention_days}" -delete
+        find "$SYSBACKUP_LOG_DIR" -name "linuxguardian-*.log" -mtime "+${retention_days}" -delete
         log_info "Rotated $count old log files (older than ${retention_days} days)"
     fi
 
     # 2. Rotate by size (if log exceeds 10MB, truncate to prevent disk bloat)
-    find "$SYSBACKUP_LOG_DIR" -name "sysbackup-*.log" -type f -size +10M 2>/dev/null | while read -r large_log; do
+    find "$SYSBACKUP_LOG_DIR" -name "linuxguardian-*.log" -type f -size +10M 2>/dev/null | while read -r large_log; do
         if [[ -f "$large_log" ]]; then
             log_warn "Log file $large_log exceeded 10MB. Truncating to last 1MB."
             # Keep the last 1MB of logs for context, discard the rest
@@ -141,7 +141,7 @@ load_config() {
 
     if [[ ! -f "$config_file" ]]; then
         log_error "Configuration file not found: $config_file"
-        log_error "Run 'sysbackup init' to create one."
+        log_error "Run 'linuxguardian init' to create one."
         return 1
     fi
 
@@ -199,7 +199,7 @@ validate_config() {
     # Validate password file exists
     if [[ ! -f "${RESTIC_PASSWORD_FILE:-}" ]]; then
         log_error "Restic password file not found: ${RESTIC_PASSWORD_FILE}"
-        log_error "Run 'sysbackup init' to set up."
+        log_error "Run 'linuxguardian init' to set up."
         return 1
     fi
 

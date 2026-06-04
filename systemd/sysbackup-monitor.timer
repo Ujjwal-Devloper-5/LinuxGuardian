@@ -1,10 +1,10 @@
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Metrics Collector Timer
+#  LinuxGuardian — Metrics Collector Timer
 #  Fires every 5 minutes to gather system health metrics
 # ═══════════════════════════════════════════════════════════════
 
 [Unit]
-Description=SystemBackup — Metrics Collector Timer (every 5 min)
+Description=LinuxGuardian — Metrics Collector Timer (every 5 min)
 Documentation=https://github.com/systembackup/systembackup
 
 [Timer]

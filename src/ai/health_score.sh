@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Health Score AI
+#  LinuxGuardian — Health Score AI
 #  Composite health scoring for backup status reporting.
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
 # ── Calculate composite health score (0-100) ───────────────────

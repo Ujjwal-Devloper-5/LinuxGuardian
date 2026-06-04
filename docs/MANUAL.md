@@ -1,17 +1,17 @@
 ---
-title: SystemBackup — Advanced AI-Powered Disaster Recovery
+title: LinuxGuardian — Advanced AI-Powered Disaster Recovery
 author: Ujjwal
 ---
 
-# SystemBackup: The Ultimate Administrator's Manual
+# LinuxGuardian: The Ultimate Administrator's Manual
 
-Welcome to **SystemBackup**, a highly sophisticated, AI-driven disaster recovery and system monitoring ecosystem. Designed for modern Linux environments, it goes far beyond traditional backup scripts by incorporating predictive AI, idle-aware scheduling, and zero-trust encryption.
+Welcome to **LinuxGuardian**, a highly sophisticated, AI-driven disaster recovery and system monitoring ecosystem. Designed for modern Linux environments, it goes far beyond traditional backup scripts by incorporating predictive AI, idle-aware scheduling, and zero-trust encryption.
 
 ---
 
 ## 1. Architectural Overview
 
-SystemBackup utilizes a rigorous, production-grade **8-Phase Pipeline** for every backup execution to ensure absolute data integrity.
+LinuxGuardian utilizes a rigorous, production-grade **8-Phase Pipeline** for every backup execution to ensure absolute data integrity.
 
 ### The 8-Phase Pipeline
 1. **Pre-flight**: Validates configurations, checks required dependencies (`restic`, `rclone`, `python3`), ensures repository initialization, and acquires system-wide locks to prevent data corruption.
@@ -27,7 +27,7 @@ SystemBackup utilizes a rigorous, production-grade **8-Phase Pipeline** for ever
 
 ## 2. The AI Suite: Predictive & Proactive Maintenance
 
-SystemBackup actively works to prevent silent data failure using machine learning and statistical modeling located in the `src/ai/` suite.
+LinuxGuardian actively works to prevent silent data failure using machine learning and statistical modeling located in the `src/ai/` suite.
 
 * **Anomaly Detection (`anomaly_detect.sh`)**  
   Uses Z-scores to identify "statistically unusual" backup sizes. For instance, if your backup is typically 1GB and suddenly spikes to 50GB, it flags a CRITICAL anomaly—warning you of potential data bloat or ransomware encryption.
@@ -41,7 +41,7 @@ SystemBackup actively works to prevent silent data failure using machine learnin
 ## 3. Security & Cloud Synchronization
 
 **Zero-Knowledge Encryption**  
-SystemBackup is encrypted-by-design. Because it uses Restic as its core engine, all data is encrypted locally *before* it is ever written to disk or sent to the cloud.
+LinuxGuardian is encrypted-by-design. Because it uses Restic as its core engine, all data is encrypted locally *before* it is ever written to disk or sent to the cloud.
 * **No Plaintext Risk:** Even if a cloud provider (e.g., Google Drive, AWS S3) is compromised, attackers only see encrypted data blobs.
 * **Least Privilege:** Home backups can be configured in systemd to run under standard user permissions instead of root.
 
@@ -54,10 +54,10 @@ SystemBackup is encrypted-by-design. Because it uses Restic as its core engine, 
 
 ## 4. Installation & Initial Setup
 
-SystemBackup comes with an interactive wizard for a smooth installation experience.
+LinuxGuardian comes with an interactive wizard for a smooth installation experience.
 
 ### Step 1: Install Dependencies
-SystemBackup will verify dependencies automatically, but ensure you have the basics:
+LinuxGuardian will verify dependencies automatically, but ensure you have the basics:
 ```bash
 sudo apt update
 sudo apt install restic rclone python3 jq bc
@@ -69,8 +69,8 @@ Run the initialization script from the source directory. This will guide you thr
 ./src/init-wizard.sh
 ```
 
-### Step 3: Configure `sysbackup.conf`
-The configuration file is generated at `/etc/sysbackup/sysbackup.conf`. 
+### Step 3: Configure `linuxguardian.conf`
+The configuration file is generated at `/etc/linuxguardian/linuxguardian.conf`. 
 Key variables to customize:
 ```ini
 # Backup Sources
@@ -92,43 +92,43 @@ KEEP_MONTHLY=12
 
 ## 5. Usage & Commands
 
-SystemBackup provides a clean CLI interface via `sysbackup-cli.sh`.
+LinuxGuardian provides a clean CLI interface via `linuxguardian-cli.sh`.
 
 ### Manual Backup Execution
 To force a backup immediately (bypassing idle-detection if desired):
 ```bash
 # Run Home Backup
-sudo sysbackup run --home
+sudo linuxguardian run --home
 
 # Run Full System Backup
-sudo sysbackup run --system
+sudo linuxguardian run --system
 
 # Run Both
-sudo sysbackup run --all
+sudo linuxguardian run --all
 ```
 
 ### Automated Systemd Timers
-SystemBackup installs systemd timers to handle everything in the background.
+LinuxGuardian installs systemd timers to handle everything in the background.
 ```bash
 # Enable and start the daily home backup timer
-sudo systemctl enable --now sysbackup-home.timer
+sudo systemctl enable --now linuxguardian-home.timer
 
 # Enable and start the weekly system backup timer
-sudo systemctl enable --now sysbackup-system.timer
+sudo systemctl enable --now linuxguardian-system.timer
 
 # Check the status of your timers
-systemctl list-timers | grep sysbackup
+systemctl list-timers | grep linuxguardian
 ```
 
 ---
 
 ## 6. One-Click Restore Utility
 
-Restoring data is frictionless thanks to the included **One-Click Restore** script (`src/sysbackup-restore.sh`).
+Restoring data is frictionless thanks to the included **One-Click Restore** script (`src/linuxguardian-restore.sh`).
 
 1. Execute the restore script:
    ```bash
-   ./src/sysbackup-restore.sh
+   ./src/linuxguardian-restore.sh
    ```
 2. **Select Repository:** Choose whether to restore from the Home (1) or System (2) repository.
 3. **View Snapshots:** The utility automatically queries Restic and displays a clean table of all available snapshots.
@@ -139,8 +139,8 @@ Restoring data is frictionless thanks to the included **One-Click Restore** scri
 
 ## 7. Logs and Troubleshooting
 
-If a backup fails, SystemBackup provides granular logs.
-* **Log Location:** `/var/lib/sysbackup/logs/`
+If a backup fails, LinuxGuardian provides granular logs.
+* **Log Location:** `/var/lib/linuxguardian/logs/`
 * **Log Rotation:** Logs are automatically rotated after 30 days. If any log exceeds 10MB due to continuous errors, it is safely truncated to the last 1MB to prevent disk bloat.
 * **Testing AI Scripts:** You can independently test AI capabilities by running the test suite:
   ```bash

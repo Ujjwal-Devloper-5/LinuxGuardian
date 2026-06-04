@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — CLI / TUI Control Plane
+#  LinuxGuardian — CLI / TUI Control Plane
 #  Main entry point for user interaction.
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
 # Load config if it exists (don't fail if it doesn't, init might be needed)
@@ -17,7 +17,7 @@ show_help() {
     print_banner
     cat << EOF
 USAGE:
-    sysbackup <command> [options]
+    linuxguardian <command> [options]
 
 COMMANDS:
     init              Run the initialization wizard
@@ -42,11 +42,11 @@ OPTIONS FOR RUN:
     --dry-run         Simulate without making changes
 
 EXAMPLES:
-    sysbackup run --home
-    sysbackup status --watch
-    sysbackup snapshots --home
-    sysbackup restore --interactive
-    sysbackup logs --last 5
+    linuxguardian run --home
+    linuxguardian status --watch
+    linuxguardian snapshots --home
+    linuxguardian restore --interactive
+    linuxguardian logs --last 5
 EOF
 }
 
@@ -72,7 +72,7 @@ cmd_status() {
         fi
         
         echo "╔══════════════════════════════════════════════════════════════╗"
-        printf "║  🛡️  SystemBackup Dashboard — %-29s ║\n" "$(get_hostname)"
+        printf "║  🛡️  LinuxGuardian Dashboard — %-29s ║\n" "$(get_hostname)"
         printf "║  Health Score: %3s/100 %s %-32s ║\n" "$hs" "$emoji" "$grade"
         echo "╠══════════════════════════════════════════════════════════════╣"
         
@@ -162,13 +162,13 @@ cmd_logs() {
         shift 2
     fi
     
-    local log_dir="${LOG_DIR:-/var/lib/sysbackup/logs}"
+    local log_dir="${LOG_DIR:-/var/lib/linuxguardian/logs}"
     if [[ ! -d "$log_dir" ]]; then
         log_error "Log directory not found: $log_dir"
         return 1
     fi
     
-    ls -lt "$log_dir" | grep "sysbackup-.*\.log" | head -n "$last_n" | while read -r line; do
+    ls -lt "$log_dir" | grep "linuxguardian-.*\.log" | head -n "$last_n" | while read -r line; do
         local file
         file=$(echo "$line" | awk '{print $9}')
         echo "=== $file ==="
@@ -193,7 +193,7 @@ main() {
             exec "${SYSBACKUP_LIB_DIR}/../init-wizard.sh" "$@"
             ;;
         run)
-            exec "/usr/local/bin/sysbackup.sh" "$@"
+            exec "/usr/local/bin/linuxguardian.sh" "$@"
             ;;
         status)
             cmd_status "$@"
@@ -208,7 +208,7 @@ main() {
             show_help
             ;;
         version)
-            echo "SystemBackup v${SYSBACKUP_VERSION:-1.0.0}"
+            echo "LinuxGuardian v${SYSBACKUP_VERSION:-1.0.0}"
             ;;
         *)
             log_error "Unknown command: $cmd"

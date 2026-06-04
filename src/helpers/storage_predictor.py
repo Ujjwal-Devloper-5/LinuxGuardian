@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SystemBackup — Storage Predictor Helper
+LinuxGuardian — Storage Predictor Helper
 Calculates weighted linear regression for storage prediction.
 No external dependencies. Uses only Python standard library.
 """

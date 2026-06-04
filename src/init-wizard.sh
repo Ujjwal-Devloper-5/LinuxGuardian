@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Interactive Initialization Wizard
+#  LinuxGuardian — Interactive Initialization Wizard
 #  Guides the user through first-time setup with a beautiful
 #  TUI experience using gum (with whiptail/read fallback).
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
 # ═══════════════════════════════════════════════════════════════
@@ -247,7 +247,7 @@ wizard_welcome() {
                 --border-foreground 39 \
                 --padding "1 3" \
                 --margin "0 2" \
-                "Welcome to SystemBackup Setup Wizard!" \
+                "Welcome to LinuxGuardian Setup Wizard!" \
                 "" \
                 "This wizard will guide you through:" \
                 "  • Configuring backup locations" \
@@ -259,7 +259,7 @@ wizard_welcome() {
                 "Let's make your system backup-proof! 🛡️"
             ;;
         *)
-            printf "${CLR_CYAN}  Welcome to SystemBackup Setup Wizard!${CLR_RESET}\n\n"
+            printf "${CLR_CYAN}  Welcome to LinuxGuardian Setup Wizard!${CLR_RESET}\n\n"
             printf "  This wizard will guide you through:\n"
             printf "    • Configuring backup locations\n"
             printf "    • Setting up cloud storage\n"
@@ -278,7 +278,7 @@ wizard_step_general() {
     tui_header "Step 1/9: General Settings" "Basic backup configuration"
 
     WIZARD_SETTINGS[BACKUP_NAME]=$(tui_input "Backup name (hostname)" "$(get_hostname)")
-    WIZARD_SETTINGS[DATA_DIR]=$(tui_input "Data directory" "/var/lib/sysbackup")
+    WIZARD_SETTINGS[DATA_DIR]=$(tui_input "Data directory" "/var/lib/linuxguardian")
     WIZARD_SETTINGS[LOG_DIR]=$(tui_input "Log directory" "${WIZARD_SETTINGS[DATA_DIR]}/logs")
 
     tui_success "General settings configured"
@@ -375,8 +375,8 @@ wizard_step_cloud() {
         *)                     WIZARD_SETTINGS[CLOUD_PROVIDER]="manual" ;;
     esac
 
-    WIZARD_SETTINGS[CLOUD_REMOTE]=$(tui_input "Remote name" "sysbackup-cloud")
-    WIZARD_SETTINGS[CLOUD_PATH]=$(tui_input "Remote path/bucket" "sysbackup")
+    WIZARD_SETTINGS[CLOUD_REMOTE]=$(tui_input "Remote name" "linuxguardian-cloud")
+    WIZARD_SETTINGS[CLOUD_PATH]=$(tui_input "Remote path/bucket" "linuxguardian")
 
     tui_info "You'll need to configure rclone for ${provider}."
     echo ""
@@ -654,8 +654,8 @@ wizard_summary() {
 }
 
 write_config() {
-    local config_dir="/etc/sysbackup"
-    local config_file="${config_dir}/sysbackup.conf"
+    local config_dir="/etc/linuxguardian"
+    local config_file="${config_dir}/linuxguardian.conf"
 
     log_info "Writing configuration..."
 
@@ -681,7 +681,7 @@ write_config() {
 
     cat > "$config_file" << CONF
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Configuration File
+#  LinuxGuardian — Configuration File
 #  Generated: $(date '+%Y-%m-%d %H:%M:%S')
 #  Hostname: $(hostname)
 # ═══════════════════════════════════════════════════════════════
@@ -700,8 +700,8 @@ RESTIC_PASSWORD_FILE="${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]}"
 # ── Backup Sources ────────────────────────────────────────────
 HOME_SOURCES="/home"
 SYSTEM_SOURCES="/"
-HOME_EXCLUDE_FILE="/etc/sysbackup/exclude-home.txt"
-SYSTEM_EXCLUDE_FILE="/etc/sysbackup/exclude-system.txt"
+HOME_EXCLUDE_FILE="/etc/linuxguardian/exclude-home.txt"
+SYSTEM_EXCLUDE_FILE="/etc/linuxguardian/exclude-system.txt"
 
 # ── Schedule ──────────────────────────────────────────────────
 HOME_SCHEDULE="${WIZARD_SETTINGS[HOME_SCHEDULE]}"
@@ -722,9 +722,9 @@ METRICS_INTERVAL_SEC=300
 # ── Cloud Sync ────────────────────────────────────────────────
 CLOUD_ENABLED=${WIZARD_SETTINGS[CLOUD_ENABLED]}
 CLOUD_REMOTE="${WIZARD_SETTINGS[CLOUD_REMOTE]:-mycloud}"
-CLOUD_PATH="${WIZARD_SETTINGS[CLOUD_PATH]:-sysbackup}"
+CLOUD_PATH="${WIZARD_SETTINGS[CLOUD_PATH]:-linuxguardian}"
 CLOUD_PROVIDER="${WIZARD_SETTINGS[CLOUD_PROVIDER]:-}"
-RCLONE_CONFIG="/etc/sysbackup/rclone.conf"
+RCLONE_CONFIG="/etc/linuxguardian/rclone.conf"
 RCLONE_BW_LIMIT="${WIZARD_SETTINGS[RCLONE_BW_LIMIT]:-0}"
 RCLONE_TRANSFERS=4
 
@@ -746,8 +746,8 @@ NOTIFY_ENABLED=${WIZARD_SETTINGS[NOTIFY_ENABLED]}
 NOTIFY_ON_SUCCESS=true
 NOTIFY_ON_FAILURE=true
 NOTIFY_SOUND_ENABLED=${WIZARD_SETTINGS[NOTIFY_SOUND_ENABLED]}
-NOTIFY_SOUND_SUCCESS="/usr/share/sysbackup/sounds/backup-success.oga"
-NOTIFY_SOUND_ERROR="/usr/share/sysbackup/sounds/backup-error.oga"
+NOTIFY_SOUND_SUCCESS="/usr/share/linuxguardian/sounds/backup-success.oga"
+NOTIFY_SOUND_ERROR="/usr/share/linuxguardian/sounds/backup-error.oga"
 
 # ── AI Features ───────────────────────────────────────────────
 ANOMALY_DETECTION=${WIZARD_SETTINGS[ANOMALY_DETECTION]}
@@ -798,26 +798,26 @@ initialize_system() {
     fi
 
     # 4. Copy exclude files if not present
-    local etc_dir="/etc/sysbackup"
+    local etc_dir="/etc/linuxguardian"
     if [[ ! -f "$etc_dir/exclude-home.txt" ]]; then
         cp "${SYSBACKUP_LIB_DIR}/../config/exclude-home.txt" "$etc_dir/" 2>/dev/null || \
-        cp "/etc/sysbackup/exclude-home.txt.example" "$etc_dir/exclude-home.txt" 2>/dev/null || true
+        cp "/etc/linuxguardian/exclude-home.txt.example" "$etc_dir/exclude-home.txt" 2>/dev/null || true
     fi
     if [[ ! -f "$etc_dir/exclude-system.txt" ]]; then
         cp "${SYSBACKUP_LIB_DIR}/../config/exclude-system.txt" "$etc_dir/" 2>/dev/null || \
-        cp "/etc/sysbackup/exclude-system.txt.example" "$etc_dir/exclude-system.txt" 2>/dev/null || true
+        cp "/etc/linuxguardian/exclude-system.txt.example" "$etc_dir/exclude-system.txt" 2>/dev/null || true
     fi
 
     # 5. Enable systemd timers
     tui_info "Enabling systemd timers..."
     if command -v systemctl &>/dev/null; then
         systemctl daemon-reload 2>/dev/null || true
-        systemctl enable sysbackup-home.timer 2>/dev/null && tui_success "Home backup timer enabled" || log_warn "Could not enable home timer"
-        systemctl enable sysbackup-system.timer 2>/dev/null && tui_success "System backup timer enabled" || log_warn "Could not enable system timer"
-        systemctl enable sysbackup-monitor.timer 2>/dev/null && tui_success "Monitor timer enabled" || log_warn "Could not enable monitor timer"
-        systemctl start sysbackup-home.timer 2>/dev/null || true
-        systemctl start sysbackup-system.timer 2>/dev/null || true
-        systemctl start sysbackup-monitor.timer 2>/dev/null || true
+        systemctl enable linuxguardian-home.timer 2>/dev/null && tui_success "Home backup timer enabled" || log_warn "Could not enable home timer"
+        systemctl enable linuxguardian-system.timer 2>/dev/null && tui_success "System backup timer enabled" || log_warn "Could not enable system timer"
+        systemctl enable linuxguardian-monitor.timer 2>/dev/null && tui_success "Monitor timer enabled" || log_warn "Could not enable monitor timer"
+        systemctl start linuxguardian-home.timer 2>/dev/null || true
+        systemctl start linuxguardian-system.timer 2>/dev/null || true
+        systemctl start linuxguardian-monitor.timer 2>/dev/null || true
     else
         log_warn "systemd not available — timers not configured"
     fi
@@ -840,11 +840,11 @@ wizard_complete() {
                 "Your system is now backup-proof!" \
                 "" \
                 "Quick commands:" \
-                "  sysbackup status      — View backup dashboard" \
-                "  sysbackup backup      — Run a backup now" \
-                "  sysbackup snapshots   — List backup snapshots" \
-                "  sysbackup restore     — Restore from backup" \
-                "  sysbackup health      — View health report" \
+                "  linuxguardian status      — View backup dashboard" \
+                "  linuxguardian backup      — Run a backup now" \
+                "  linuxguardian snapshots   — List backup snapshots" \
+                "  linuxguardian restore     — Restore from backup" \
+                "  linuxguardian health      — View health report" \
                 "" \
                 "Backups are scheduled automatically via systemd timers."
             ;;
@@ -852,11 +852,11 @@ wizard_complete() {
             printf "\n${CLR_GREEN}${CLR_BOLD}  🎉 Setup Complete!${CLR_RESET}\n\n"
             printf "  Your system is now backup-proof!\n\n"
             printf "  Quick commands:\n"
-            printf "    ${CLR_CYAN}sysbackup status${CLR_RESET}      — View backup dashboard\n"
-            printf "    ${CLR_CYAN}sysbackup backup${CLR_RESET}      — Run a backup now\n"
-            printf "    ${CLR_CYAN}sysbackup snapshots${CLR_RESET}   — List backup snapshots\n"
-            printf "    ${CLR_CYAN}sysbackup restore${CLR_RESET}     — Restore from backup\n"
-            printf "    ${CLR_CYAN}sysbackup health${CLR_RESET}      — View health report\n\n"
+            printf "    ${CLR_CYAN}linuxguardian status${CLR_RESET}      — View backup dashboard\n"
+            printf "    ${CLR_CYAN}linuxguardian backup${CLR_RESET}      — Run a backup now\n"
+            printf "    ${CLR_CYAN}linuxguardian snapshots${CLR_RESET}   — List backup snapshots\n"
+            printf "    ${CLR_CYAN}linuxguardian restore${CLR_RESET}     — Restore from backup\n"
+            printf "    ${CLR_CYAN}linuxguardian health${CLR_RESET}      — View health report\n\n"
             printf "  Backups are scheduled automatically via systemd timers.\n"
             ;;
     esac
@@ -865,8 +865,8 @@ wizard_complete() {
     if tui_confirm "Run first home backup now?" "yes"; then
         echo ""
         log_info "Starting first home backup..."
-        /usr/local/bin/sysbackup run --home --force 2>&1 || \
-            log_warn "First backup had issues. Check: sysbackup logs --last 1"
+        /usr/local/bin/linuxguardian run --home --force 2>&1 || \
+            log_warn "First backup had issues. Check: linuxguardian logs --last 1"
     fi
 }
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — One-Click Restore Utility
+#  LinuxGuardian — One-Click Restore Utility
 #  Provides an interactive UI to list snapshots and restore data.
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
 # ── Resolve library path
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
 load_config || die "Failed to load configuration"
@@ -29,7 +29,7 @@ case "$choice" in
 esac
 
 if [[ -z "$repo" ]]; then
-    die "Repository path is not configured in sysbackup.conf."
+    die "Repository path is not configured in linuxguardian.conf."
 fi
 
 export RESTIC_REPOSITORY="$repo"
