@@ -259,14 +259,33 @@ cmd_relocate() {
     
     tui_header "Relocate Backup Repositories" "Move local repositories to a new drive"
     
-    # 1. Show current paths
-    echo -e "Current Repository Paths (from config):"
-    echo -e "  Home Repo   : ${HOME_REPO:-Not configured}"
-    echo -e "  System Repo : ${SYSTEM_REPO:-Not configured}"
-    echo ""
-    
     local src_home_repo="$HOME_REPO"
     local src_system_repo="$SYSTEM_REPO"
+    local config_active=true
+
+    # Auto-detect if current config paths actually exist locally
+    if [[ ! -d "$src_home_repo" && ! -d "$src_system_repo" ]]; then
+        config_active=false
+    fi
+
+    # If config paths don't exist, check default location
+    if [[ "$config_active" == "false" && -d "/var/lib/sysbackup/repos" ]]; then
+        tui_info "The currently configured repository paths do not exist."
+        tui_info "However, existing backup repositories were found at the default location:"
+        tui_info "  /var/lib/sysbackup/repos"
+        echo ""
+        if tui_confirm "Would you like to relocate from the default internal folder?" "yes"; then
+            src_home_repo="/var/lib/sysbackup/repos/home"
+            src_system_repo="/var/lib/sysbackup/repos/system"
+        fi
+    fi
+
+    # Show confirmation of source directories
+    echo ""
+    echo -e "Source Repository Locations (Migrating FROM):"
+    echo -e "  Home Repo   : $src_home_repo"
+    echo -e "  System Repo : $src_system_repo"
+    echo ""
     
     if ! tui_confirm "Are these the correct source paths of your existing backups?" "yes"; then
         local src_parent
@@ -323,9 +342,9 @@ cmd_relocate() {
     if tui_confirm "Move existing repository files to the new location?" "yes"; then
         # Move Home Repo
         if [[ -d "$src_home_repo" ]]; then
-            log_info "Moving Home Repository from $src_home_repo to $new_home_repo..."
+            log_info "Moving Home Repository with progress bar..."
             mkdir -p "$(dirname "$new_home_repo")"
-            if cp -rp "$src_home_repo" "$new_home_repo"; then
+            if rsync -ah --info=progress2 "$src_home_repo" "$(dirname "$new_home_repo")/"; then
                 # Remove old repo after successful copy
                 rm -rf "$src_home_repo"
                 tui_success "Home repository files moved."
@@ -339,9 +358,9 @@ cmd_relocate() {
         
         # Move System Repo
         if [[ -d "$src_system_repo" ]]; then
-            log_info "Moving System Repository from $src_system_repo to $new_system_repo..."
+            log_info "Moving System Repository with progress bar..."
             mkdir -p "$(dirname "$new_system_repo")"
-            if cp -rp "$src_system_repo" "$new_system_repo"; then
+            if rsync -ah --info=progress2 "$src_system_repo" "$(dirname "$new_system_repo")/"; then
                 # Remove old repo after successful copy
                 rm -rf "$src_system_repo"
                 tui_success "System repository files moved."
