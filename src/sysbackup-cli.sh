@@ -260,13 +260,28 @@ cmd_relocate() {
     tui_header "Relocate Backup Repositories" "Move local repositories to a new drive"
     
     # 1. Show current paths
-    echo -e "Current Repository Paths:"
+    echo -e "Current Repository Paths (from config):"
     echo -e "  Home Repo   : ${HOME_REPO:-Not configured}"
     echo -e "  System Repo : ${SYSTEM_REPO:-Not configured}"
     echo ""
     
+    local src_home_repo="$HOME_REPO"
+    local src_system_repo="$SYSTEM_REPO"
+    
+    if ! tui_confirm "Are these the correct source paths of your existing backups?" "yes"; then
+        local src_parent
+        src_parent=$(tui_input "Enter parent directory of your existing backups" "/var/lib/sysbackup")
+        src_home_repo="${src_parent}/repos/home"
+        src_system_repo="${src_parent}/repos/system"
+        echo ""
+        echo -e "Updated Source Paths:"
+        echo -e "  Home Repo   : $src_home_repo"
+        echo -e "  System Repo : $src_system_repo"
+        echo ""
+    fi
+
     # Check if they are local paths
-    if [[ ! "${HOME_REPO:-}" =~ ^/ ]] || [[ ! "${SYSTEM_REPO:-}" =~ ^/ ]]; then
+    if [[ ! "$src_home_repo" =~ ^/ ]] || [[ ! "$src_system_repo" =~ ^/ ]]; then
         log_error "Relocation is only supported for local repository paths starting with /"
         return 1
     fi
@@ -299,41 +314,43 @@ cmd_relocate() {
     echo -e "  System Repo : $new_system_repo"
     echo ""
     
+    if [[ "$src_home_repo" == "$new_home_repo" || "$src_system_repo" == "$new_system_repo" ]]; then
+        log_error "New paths are identical to the source paths. Relocation aborted."
+        return 1
+    fi
+
     # 3. Ask if they want to move existing files
-    local move_files
-    move_files=$(tui_confirm "Move existing repository files to the new location?" "yes")
-    
-    if [[ "$move_files" == "true" ]]; then
+    if tui_confirm "Move existing repository files to the new location?" "yes"; then
         # Move Home Repo
-        if [[ -d "$HOME_REPO" ]]; then
-            log_info "Moving Home Repository from $HOME_REPO to $new_home_repo..."
+        if [[ -d "$src_home_repo" ]]; then
+            log_info "Moving Home Repository from $src_home_repo to $new_home_repo..."
             mkdir -p "$(dirname "$new_home_repo")"
-            if cp -rp "$HOME_REPO" "$new_home_repo"; then
+            if cp -rp "$src_home_repo" "$new_home_repo"; then
                 # Remove old repo after successful copy
-                rm -rf "$HOME_REPO"
+                rm -rf "$src_home_repo"
                 tui_success "Home repository files moved."
             else
                 log_error "Failed to copy Home repository files."
                 return 1
             fi
         else
-            log_warn "Home repository directory does not exist locally. Skipping file copy."
+            log_warn "Source Home repository directory ($src_home_repo) does not exist. Skipping file copy."
         fi
         
         # Move System Repo
-        if [[ -d "$SYSTEM_REPO" ]]; then
-            log_info "Moving System Repository from $SYSTEM_REPO to $new_system_repo..."
+        if [[ -d "$src_system_repo" ]]; then
+            log_info "Moving System Repository from $src_system_repo to $new_system_repo..."
             mkdir -p "$(dirname "$new_system_repo")"
-            if cp -rp "$SYSTEM_REPO" "$new_system_repo"; then
+            if cp -rp "$src_system_repo" "$new_system_repo"; then
                 # Remove old repo after successful copy
-                rm -rf "$SYSTEM_REPO"
+                rm -rf "$src_system_repo"
                 tui_success "System repository files moved."
             else
                 log_error "Failed to copy System repository files."
                 return 1
             fi
         else
-            log_warn "System repository directory does not exist locally. Skipping file copy."
+            log_warn "Source System repository directory ($src_system_repo) does not exist. Skipping file copy."
         fi
     fi
     
