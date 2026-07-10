@@ -272,6 +272,19 @@ wizard_welcome() {
 
     echo ""
     tui_confirm "Ready to begin?" "yes" || { echo "Setup cancelled."; exit 0; }
+
+    echo ""
+    local setup_type
+    setup_type=$(tui_choose "Select setup mode:" \
+        "Fresh Setup (Create new backup vaults and schedule)" \
+        "Import / Reconnect (Link this machine to existing cloud/local vaults)")
+
+    if [[ "$setup_type" == *"Import"* ]]; then
+        WIZARD_SETTINGS[SETUP_MODE]="import"
+        tui_info "Import mode selected. We will link this machine to your existing backups."
+    else
+        WIZARD_SETTINGS[SETUP_MODE]="fresh"
+    fi
 }
 
 wizard_step_general() {
@@ -302,32 +315,43 @@ wizard_step_password() {
     tui_info "This password is required for ALL backup/restore operations."
     echo ""
 
-    local pw_method
-    pw_method=$(tui_choose "How would you like to set the encryption password?" \
-        "Generate a secure random password (recommended)" \
-        "Enter my own password")
-
     local password=""
     local password_file="${WIZARD_SETTINGS[DATA_DIR]:-}/.restic-password"
 
-    if [[ "$pw_method" == *"Generate"* ]]; then
-        password=$(generate_password 32)
-        tui_info "Generated password (SAVE THIS SOMEWHERE SAFE!):"
-        echo ""
-        printf "  ${CLR_YELLOW}${CLR_BOLD}  %s  ${CLR_RESET}\n" "$password"
-        echo ""
-        tui_info "This password will be stored in: $password_file"
-        tui_confirm "I have saved the password somewhere safe" "yes" || {
-            log_warn "Please save the password before continuing!"
-            tui_confirm "Continue anyway?" "no" || exit 1
-        }
-    else
-        password=$(tui_password "Enter encryption password")
+    if [[ "${WIZARD_SETTINGS[SETUP_MODE]:-}" == "import" ]]; then
+        tui_info "Since you are importing existing backups, please enter your existing repository password."
+        password=$(tui_password "Enter existing encryption password")
         local confirm
-        confirm=$(tui_password "Confirm encryption password")
+        confirm=$(tui_password "Confirm password")
         if [[ "$password" != "$confirm" ]]; then
             log_error "Passwords don't match!"
             exit 1
+        fi
+    else
+        local pw_method
+        pw_method=$(tui_choose "How would you like to set the encryption password?" \
+            "Generate a secure random password (recommended)" \
+            "Enter my own password")
+
+        if [[ "$pw_method" == *"Generate"* ]]; then
+            password=$(generate_password 32)
+            tui_info "Generated password (SAVE THIS SOMEWHERE SAFE!):"
+            echo ""
+            printf "  ${CLR_YELLOW}${CLR_BOLD}  %s  ${CLR_RESET}\n" "$password"
+            echo ""
+            tui_info "This password will be stored in: $password_file"
+            tui_confirm "I have saved the password somewhere safe" "yes" || {
+                log_warn "Please save the password before continuing!"
+                tui_confirm "Continue anyway?" "no" || exit 1
+            }
+        else
+            password=$(tui_password "Enter encryption password")
+            local confirm
+            confirm=$(tui_password "Confirm encryption password")
+            if [[ "$password" != "$confirm" ]]; then
+                log_error "Passwords don't match!"
+                exit 1
+            fi
         fi
     fi
 
@@ -780,21 +804,37 @@ initialize_system() {
     chmod 600 "${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]:-}"
     tui_success "Password file secured"
 
-    # 3. Initialize restic repos
+    # 3. Initialize/Link restic repos
     export RESTIC_PASSWORD_FILE="${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]:-}"
 
-    tui_info "Initializing home backup repository..."
-    if restic init --repo "${WIZARD_SETTINGS[HOME_REPO]:-}" 2>/dev/null; then
-        tui_success "Home repo initialized: ${WIZARD_SETTINGS[HOME_REPO]:-}"
-    else
-        log_warn "Home repo may already be initialized"
-    fi
+    if [[ "${WIZARD_SETTINGS[SETUP_MODE]:-}" == "import" ]]; then
+        tui_info "Linking and verifying existing home backup repository..."
+        if restic snapshots --repo "${WIZARD_SETTINGS[HOME_REPO]:-}" &>/dev/null; then
+            tui_success "Successfully linked to existing home repository!"
+        else
+            log_warn "Could not connect to home repository. Ensure remote/path is correct and password is valid."
+        fi
 
-    tui_info "Initializing system backup repository..."
-    if restic init --repo "${WIZARD_SETTINGS[SYSTEM_REPO]:-}" 2>/dev/null; then
-        tui_success "System repo initialized: ${WIZARD_SETTINGS[SYSTEM_REPO]:-}"
+        tui_info "Linking and verifying existing system backup repository..."
+        if restic snapshots --repo "${WIZARD_SETTINGS[SYSTEM_REPO]:-}" &>/dev/null; then
+            tui_success "Successfully linked to existing system repository!"
+        else
+            log_warn "Could not connect to system repository. Ensure remote/path is correct and password is valid."
+        fi
     else
-        log_warn "System repo may already be initialized"
+        tui_info "Initializing home backup repository..."
+        if restic init --repo "${WIZARD_SETTINGS[HOME_REPO]:-}" 2>/dev/null; then
+            tui_success "Home repo initialized: ${WIZARD_SETTINGS[HOME_REPO]:-}"
+        else
+            log_warn "Home repo may already be initialized"
+        fi
+
+        tui_info "Initializing system backup repository..."
+        if restic init --repo "${WIZARD_SETTINGS[SYSTEM_REPO]:-}" 2>/dev/null; then
+            tui_success "System repo initialized: ${WIZARD_SETTINGS[SYSTEM_REPO]:-}"
+        else
+            log_warn "System repo may already be initialized"
+        fi
     fi
 
     # 4. Copy exclude files if not present
@@ -862,11 +902,19 @@ wizard_complete() {
     esac
 
     echo ""
-    if tui_confirm "Run first home backup now?" "yes"; then
-        echo ""
-        log_info "Starting first home backup..."
-        /usr/local/bin/sysbackup run --home --force 2>&1 || \
-            log_warn "First backup had issues. Check: sysbackup logs --last 1"
+    if [[ "${WIZARD_SETTINGS[SETUP_MODE]:-}" == "import" ]]; then
+        if tui_confirm "Launch the restore utility to recover your files now?" "yes"; then
+            echo ""
+            log_info "Launching restore utility..."
+            exec /usr/local/bin/sysbackup restore
+        fi
+    else
+        if tui_confirm "Run first home backup now?" "yes"; then
+            echo ""
+            log_info "Starting first home backup..."
+            /usr/local/bin/sysbackup run --home --force 2>&1 || \
+                log_warn "First backup had issues. Check: sysbackup logs --last 1"
+        fi
     fi
 }
 

@@ -1,134 +1,123 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  SystemBackup — Advanced Recovery & Restore System
-#  Enterprise-grade tool for partial and full disaster recovery.
+#  SystemBackup — One-Click Restore Utility
+#  Provides an interactive UI to list snapshots and restore data.
 # ═══════════════════════════════════════════════════════════════
 
-set -o pipefail
+set -euo pipefail
 
-# ── Resolve library path ──────────────────────────────────────
+# ── Resolve library path
 SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
-# ── Initialization / Bootstrap Logic ─────────────────────────
-bootstrap_new_system() {
-    log_warn "Configuration file not found. Switching to NEW SYSTEM RECOVERY mode."
-    echo "This mode allows you to restore data to a fresh installation."
-    echo ""
-    
-    # 1. Rclone Setup
-    if ! command -v rclone &>/dev/null; then
-        die "rclone is not installed. Please run: sudo pacman -S rclone"
-    fi
-    
-    read -r -p "Enter your Google Drive rclone remote name (e.g., fortress-cloudbackup): " CLOUD_REMOTE
-    read -r -p "Enter your rclone config path (default: ~/.config/rclone/rclone.conf): " RCLONE_CONFIG
-    RCLONE_CONFIG="${RCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
-    
-    if [[ ! -f "$RCLONE_CONFIG" ]]; then
-        die "rclone config not found at $RCLONE_CONFIG. Please run "rclone config" first."
-    fi
-
-    # 2. Restic Password Setup
-    read -r -s -p "Enter your Restic Master Password (the one you set during backup): " RESTIC_PASSWORD
-    echo ""
-    export RESTIC_PASSWORD="$RESTIC_PASSWORD"
-}
-
-# ── Main UI ───────────────────────────────────────────────────
+load_config || die "Failed to load configuration"
 print_banner
 
-if [[ ! -f "/etc/sysbackup/sysbackup.conf" ]]; then
-    bootstrap_new_system
-    MODE="cloud"
-else
-    source /etc/sysbackup/sysbackup.conf
-    MODE="local"
-    log_info "Configuration detected. Mode: Standard Recovery"
-fi
+echo -e "${CLR_CYAN}▶ One-Click Restore Utility${CLR_RESET}"
+echo "Select which backup repository to restore from:"
+echo "  1) Home Backup"
+echo "  2) System Backup"
+read -r -p "Choice (1/2): " choice
 
-echo -e "${CLR_CYAN}▶ Advanced Restore System${CLR_RESET}"
-echo "What would you like to restore?"
-echo "  1) Home Data (/home)"
-echo "  2) System Data (/)"
-read -r -p "Choice (1/2): " type_choice
-
-case "$type_choice" in
-    1) 
-       TYPE="home"
-       REPO_LOCAL="${HOME_REPO:-/var/lib/sysbackup/repos/home}"
-       REPO_CLOUD="rclone:${CLOUD_REMOTE:-fortress-cloudbackup}:sysbackup/home"
-       ;;
+case "$choice" in
+    1) repo="$(config_get "HOME_REPO" "")" ;;
     2) 
-       TYPE="system"
-       REPO_LOCAL="${SYSTEM_REPO:-/var/lib/sysbackup/repos/system}"
-       REPO_CLOUD="rclone:${CLOUD_REMOTE:-fortress-cloudbackup}:sysbackup/system"
        require_root
+       repo="$(config_get "SYSTEM_REPO" "")" 
        ;;
     *) die "Invalid choice." ;;
 esac
 
-# ── Location Choice ──────────────────────────────────────────
-echo ""
-echo "Select Source Location:"
-echo "  1) Local Disk (Fastest - Recommended)"
-echo "  2) Cloud (Google Drive - Direct Download)"
-read -r -p "Choice (1/2): " loc_choice
+if [[ -z "$repo" ]]; then
+    die "Repository path is not configured in sysbackup.conf."
+fi
 
-if [[ "$loc_choice" == "1" ]]; then
-    export RESTIC_REPOSITORY="$REPO_LOCAL"
-    export RESTIC_PASSWORD_FILE="${RESTIC_PASSWORD_FILE:-/var/lib/sysbackup/.restic-password}"
-else
-    export RESTIC_REPOSITORY="$REPO_CLOUD"
-    export RCLONE_CONFIG="${RCLONE_CONFIG:-/home/ujjwal/.config/rclone/rclone.conf}"
-    # Use password file if available, otherwise use the one from bootstrap
-    if [[ -f "/var/lib/sysbackup/.restic-password" ]]; then
-        export RESTIC_PASSWORD_FILE="/var/lib/sysbackup/.restic-password"
+export RESTIC_REPOSITORY="$repo"
+export RESTIC_PASSWORD_FILE="$(config_get "RESTIC_PASSWORD_FILE" "")"
+
+log_section "Available Snapshots"
+restic snapshots || die "Failed to retrieve snapshots. Check repository connection and password."
+
+echo ""
+read -r -p "Enter snapshot ID to restore (or latest): " snap_id
+snap_id="${snap_id:-latest}"
+
+# ── Subpath Filtering Option ──────────────────────────────────
+echo ""
+read -r -p "Restore the entire backup? [Y/n]: " whole_restore
+whole_restore="${whole_restore:-y}"
+include_args=()
+
+if [[ "$whole_restore" =~ ^[Nn] ]]; then
+    read -r -p "Enter specific folder/file subpath to restore (e.g. home/ujjwal/Documents): " subpath
+    if [[ -n "$subpath" ]]; then
+        include_args+=(--include "$subpath")
+        log_info "Selective restore filter added: $subpath"
+    else
+        log_warn "Empty subpath. Restoring the entire backup."
     fi
 fi
 
-# ── Snapshot Selection ────────────────────────────────────────
-log_section "Available Snapshots ($TYPE)"
-restic snapshots --option rclone.program="rclone --config $RCLONE_CONFIG" 2>/dev/null || restic snapshots
-
+# ── Migration / Destination Selection ─────────────────────────
 echo ""
-read -r -p "Enter Snapshot ID to restore (or "latest"): " SNAP_ID
-SNAP_ID="${SNAP_ID:-latest}"
+echo "Select Restore Mode:"
+echo "  1) Safe Restore (Restore to a temporary or custom folder)"
+echo "  2) In-Place Migration (Restore directly to active OS paths)"
+read -r -p "Choice (1/2): " restore_mode
 
-# ── Scope Selection ──────────────────────────────────────────
-echo ""
-echo "Select Restore Scope:"
-echo "  1) Full Restore (Everything in snapshot)"
-echo "  2) Selective Restore (Specific files or folders)"
-read -r -p "Choice (1/2): " scope_choice
-
-case "$scope_choice" in
-    1) SCOPE_ARGS="" ;;
-    2) 
-       read -r -p "Enter path to file/folder (e.g., /home/user/Documents): " SELECTIVE_PATH
-       SCOPE_ARGS="--include $SELECTIVE_PATH"
-       ;;
-    *) die "Invalid choice." ;;
-esac
-
-# ── Target Selection ──────────────────────────────────────────
-echo ""
-read -r -p "Enter Target Path (e.g., /tmp/restore or /): " TARGET_PATH
-TARGET_PATH="${TARGET_PATH:-/tmp/restore}"
-
-if [[ "$TARGET_PATH" == "/" ]]; then
-    log_warn "DANGER: You are restoring directly to the LIVE system (/)."
-    read -r -p "Are you absolutely sure you want to overwrite existing files? (y/N): " CONFIRM
-    if [[ "$CONFIRM" != "y" ]]; then die "Restore cancelled."; fi
+target=""
+if [[ "$restore_mode" -eq 2 ]]; then
+    require_root
+    if [[ "$choice" -eq 1 ]]; then
+        echo -e "${CLR_YELLOW}${CLR_BOLD}⚠️  WARNING: You are about to restore personal data directly to your active root system. This will overwrite files in your home directories.${CLR_RESET}"
+        read -r -p "Are you sure you want to perform in-place migration? [y/N]: " confirm
+        [[ "$confirm" =~ ^[Yy] ]] || die "Migration aborted by user."
+        target="/"
+    else
+        echo -e "${CLR_RED}${CLR_BOLD}🚨 DANGER: Restoring system configurations directly to / on a live OS can cause stability issues and break boot configurations.${CLR_RESET}"
+        read -r -p "Do you want to proceed and force system restoration directly to /? [y/N]: " confirm
+        [[ "$confirm" =~ ^[Yy] ]] || die "System migration aborted by user."
+        target="/"
+    fi
+else
+    read -r -p "Enter destination path to restore to (e.g., /tmp/restore): " target
+    if [[ -z "$target" ]]; then
+        die "Destination path is required."
+    fi
 fi
 
-# ── Execute Restore ───────────────────────────────────────────
-ensure_dir "$TARGET_PATH" "755"
-log_info "Initiating restore from $RESTIC_REPOSITORY..."
+ensure_dir "$target" "755"
 
-if restic restore "$SNAP_ID" --target "$TARGET_PATH" $SCOPE_ARGS --option rclone.program="rclone --config $RCLONE_CONFIG"; then
-    log_success "Restore completed successfully to: $TARGET_PATH"
+# ── Initialize Dedicated Restore Log ──────────────────────────
+log_dir=$(config_get "LOG_DIR" "/var/lib/sysbackup/logs")
+mkdir -p "$log_dir"
+ts=$(date '+%Y-%m-%d_%H%M%S')
+restore_log="${log_dir}/sysbackup-restore-${ts}.log"
+touch "$restore_log"
+
+log_info "Restoring snapshot $snap_id to $target..."
+log_info "Detailed logs are being written to: $restore_log"
+echo "This may take some time depending on your backup size. Please wait..."
+
+# Run restic restore redirecting outputs to the log file
+if restic restore "$snap_id" --target "$target" "${include_args[@]}" > "$restore_log" 2>&1; then
+    log_success "Restore completed successfully to $target"
 else
-    log_error "Restore encountered errors. Please check the logs."
-    exit 1
+    # Parse log file to see if failures are only non-fatal skipped sockets/FIFOs
+    local total_errors
+    total_errors=$(grep -c -i "error" "$restore_log" || echo 0)
+    local skipped_sockets
+    skipped_sockets=$(grep -c -i "socket file skipped" "$restore_log" || echo 0)
+    local skipped_fifos
+    skipped_fifos=$(grep -c -i "fifo skipped" "$restore_log" || echo 0)
+    local non_fatal_skips=$((skipped_sockets + skipped_fifos))
+
+    if [[ "$total_errors" -eq "$non_fatal_skips" && "$non_fatal_skips" -gt 0 ]]; then
+        log_warn "Restore completed with $non_fatal_skips non-fatal warnings (skipped sockets/pipes)."
+        log_success "All data files and directories successfully restored to $target"
+    else
+        log_error "Restore encountered fatal errors."
+        log_error "Please check the detailed logs at: $restore_log"
+        exit 1
+    fi
 fi
