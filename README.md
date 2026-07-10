@@ -39,24 +39,39 @@ Project SystemBackup/
 
 ## Installation & Setup
 
-### 1. Prerequisites
-Ensure you have the following installed (Arch Linux example):
+### Option A: AUR Installation (Arch Linux / yay)
+This project is officially package-managed for Arch Linux. Installing from the AUR automatically resolves dependencies, handles systemd setup, and configures environment paths.
+
 ```bash
-sudo pacman -S restic rclone jq bc python
+# Using an AUR helper
+yay -S sysbackup-git
+
+# Or manually from the AUR source
+git clone https://aur.archlinux.org/sysbackup-git.git
+cd sysbackup-git
+makepkg -si
 ```
 
-### 2. Fast Install
-```bash
-git clone https://github.com/your-repo/Project-SystemBackup.git
-cd Project-SystemBackup
-sudo ./install.sh
-```
+### Option B: Manual Installation (Other Linux Distros)
+If you are deploying manually, run the automated installation script:
 
-### 3. Initialize
+1. **Prerequisites:** Install the required dependencies:
+   ```bash
+   sudo pacman -S restic rclone jq bc python  # Arch Linux example
+   ```
+2. **Install:**
+   ```bash
+   git clone https://github.com/Ujjwal-Devloper-5/LinuxGuardian.git
+   cd LinuxGuardian
+   sudo ./install.sh
+   ```
+
+### 3. Initialization
+After installation, run the setup wizard to link or initialize your repositories:
 ```bash
 sudo sysbackup init
 ```
-*Follow the wizard to set up your encryption password and Google Drive integration.*
+*The wizard allows you to run a **Fresh Setup** to initialize new repositories or choosing **Import / Reconnect** to link the system to an existing cloud or local vault (perfect for disaster recovery).*
 
 ---
 
