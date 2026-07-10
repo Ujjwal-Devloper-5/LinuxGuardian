@@ -251,9 +251,6 @@ tui_success() {
     esac
 }
 
-# Auto-detect TUI engine
-detect_tui_engine
-
 # ── Globals (set after config load) ───────────────────────────
 SYSBACKUP_CONFIG_FILE="${SYSBACKUP_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
 SYSBACKUP_DATA_DIR="${SYSBACKUP_DATA_DIR:-$DEFAULT_DATA_DIR}"
@@ -835,3 +832,6 @@ print_banner() {
         printf "${CLR_DIM}  Advanced AI-Powered System Protection${CLR_RESET}\n\n"
     fi
 }
+
+# Auto-detect TUI engine on script load
+detect_tui_engine
