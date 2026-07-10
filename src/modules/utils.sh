@@ -45,6 +45,215 @@ DEFAULT_LOG_DIR="/var/lib/sysbackup/logs"
 DEFAULT_LIB_DIR="/usr/local/lib/sysbackup"
 DEFAULT_LOCK_FILE="/var/run/sysbackup.lock"
 
+# ── TUI Framework ─────────────────────────────────────────────
+TUI_ENGINE=""
+
+detect_tui_engine() {
+    if check_command gum; then
+        TUI_ENGINE="gum"
+    elif check_command whiptail; then
+        TUI_ENGINE="whiptail"
+    else
+        TUI_ENGINE="read"
+    fi
+}
+
+tui_header() {
+    local title="$1"
+    local subtitle="${2:-}"
+
+    case "$TUI_ENGINE" in
+        gum)
+            echo ""
+            gum style \
+                --border double \
+                --border-foreground 212 \
+                --padding "1 3" \
+                --margin "0 2" \
+                --bold \
+                "$title" "$subtitle"
+            echo ""
+            ;;
+        *)
+            echo ""
+            printf "${CLR_CYAN}╔══════════════════════════════════════════╗${CLR_RESET}\n"
+            printf "${CLR_CYAN}║  ${CLR_BOLD}%-40s${CLR_CYAN}║${CLR_RESET}\n" "$title"
+            if [[ -n "$subtitle" ]]; then
+                printf "${CLR_CYAN}║  ${CLR_DIM}%-40s${CLR_CYAN}║${CLR_RESET}\n" "$subtitle"
+            fi
+            printf "${CLR_CYAN}╚══════════════════════════════════════════╝${CLR_RESET}\n"
+            echo ""
+            ;;
+    esac
+}
+
+tui_input() {
+    local prompt="$1"
+    local default="${2:-}"
+    local result=""
+
+    case "$TUI_ENGINE" in
+        gum)
+            result=$(gum input \
+                --placeholder "$default" \
+                --prompt "  $prompt: " \
+                --value "$default" \
+                --width 50 \
+                --char-limit 200)
+            ;;
+        whiptail)
+            result=$(whiptail --inputbox "$prompt" 10 50 "$default" 3>&1 1>&2 2>&3 || echo "$default")
+            ;;
+        *)
+            printf "  ${CLR_CYAN}$prompt${CLR_RESET} [${CLR_DIM}$default${CLR_RESET}]: "
+            read -r result
+            result="${result:-$default}"
+            ;;
+    esac
+
+    echo "$result"
+}
+
+tui_choose() {
+    local prompt="$1"
+    shift
+    local options=("$@")
+    local result=""
+
+    case "$TUI_ENGINE" in
+        gum)
+            printf "  ${CLR_CYAN}$prompt${CLR_RESET}\n"
+            result=$(printf '%s\n' "${options[@]}" | gum choose --cursor.foreground 212)
+            ;;
+        whiptail)
+            local items=()
+            local i=1
+            for opt in "${options[@]}"; do
+                items+=("$opt" "" "$i")
+                ((i++))
+            done
+            result=$(whiptail --menu "$prompt" 20 60 10 "${items[@]}" 3>&1 1>&2 2>&3 || echo "${options[0]}")
+            ;;
+        *)
+            printf "  ${CLR_CYAN}$prompt${CLR_RESET}\n"
+            local i=1
+            for opt in "${options[@]}"; do
+                printf "  ${CLR_YELLOW}%d)${CLR_RESET} %s\n" "$i" "$opt"
+                ((i++))
+            done
+            printf "  ${CLR_CYAN}Choose [1-${#options[@]}]:${CLR_RESET} "
+            local num
+            read -r num
+            num="${num:-1}"
+            if [[ "$num" -ge 1 && "$num" -le "${#options[@]}" ]]; then
+                result="${options[$((num - 1))]}"
+            else
+                result="${options[0]}"
+            fi
+            ;;
+    esac
+
+    echo "$result"
+}
+
+tui_confirm() {
+    local prompt="$1"
+    local default="${2:-yes}"
+
+    case "$TUI_ENGINE" in
+        gum)
+            if [[ "$default" == "yes" ]]; then
+                gum confirm "$prompt" --default=true && return 0 || return 1
+            else
+                gum confirm "$prompt" --default=false && return 0 || return 1
+            fi
+            ;;
+        whiptail)
+            if whiptail --yesno "$prompt" 10 50; then
+                return 0
+            else
+                return 1
+            fi
+            ;;
+        *)
+            local yn_hint="[Y/n]"
+            [[ "$default" == "no" ]] && yn_hint="[y/N]"
+            printf "  ${CLR_CYAN}$prompt${CLR_RESET} $yn_hint: "
+            local ans
+            read -r ans
+            ans="${ans:-$default}"
+            case "$ans" in
+                [Yy]*) return 0 ;;
+                *)     return 1 ;;
+            esac
+            ;;
+    esac
+}
+
+tui_spin() {
+    local title="$1"
+    shift
+
+    case "$TUI_ENGINE" in
+        gum)
+            gum spin --spinner dot --title "  $title" -- "$@"
+            ;;
+        *)
+            printf "  ${CLR_DIM}$title...${CLR_RESET} "
+            "$@" 2>/dev/null
+            printf "${CLR_GREEN}done${CLR_RESET}\n"
+            ;;
+    esac
+}
+
+tui_password() {
+    local prompt="$1"
+    local result=""
+
+    case "$TUI_ENGINE" in
+        gum)
+            result=$(gum input --password --prompt "  $prompt: " --width 50)
+            ;;
+        whiptail)
+            result=$(whiptail --passwordbox "$prompt" 10 50 3>&1 1>&2 2>&3 || echo "")
+            ;;
+        *)
+            printf "  ${CLR_CYAN}$prompt${CLR_RESET}: "
+            read -rs result
+            echo ""
+            ;;
+    esac
+
+    echo "$result"
+}
+
+tui_info() {
+    local msg="$1"
+    case "$TUI_ENGINE" in
+        gum)
+            gum style --foreground 39 --italic "  ℹ $msg"
+            ;;
+        *)
+            printf "  ${CLR_BLUE}ℹ %s${CLR_RESET}\n" "$msg"
+            ;;
+    esac
+}
+
+tui_success() {
+    local msg="$1"
+    case "$TUI_ENGINE" in
+        gum)
+            gum style --foreground 46 --bold "  ✅ $msg"
+            ;;
+        *)
+            printf "  ${CLR_GREEN}✅ %s${CLR_RESET}\n" "$msg"
+            ;;
+    esac
+}
+
+# Auto-detect TUI engine
+detect_tui_engine
+
 # ── Globals (set after config load) ───────────────────────────
 SYSBACKUP_CONFIG_FILE="${SYSBACKUP_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
 SYSBACKUP_DATA_DIR="${SYSBACKUP_DATA_DIR:-$DEFAULT_DATA_DIR}"
