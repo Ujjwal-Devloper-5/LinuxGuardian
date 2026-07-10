@@ -50,15 +50,23 @@ phase_preflight() {
         check_dependency "rclone" "rclone" "true" || die "rclone is required for cloud sync"
     fi
 
-    # Check repos are initialized
+    # Check repos are online and initialized
     local backup_type="$1"
     if [[ "$backup_type" == "home" || "$backup_type" == "all" ]]; then
+        if ! is_repo_online "$HOME_REPO"; then
+            log_warn "Home backup repository is offline (external drive unmounted or unplugged). Skipping backup gracefully."
+            exit 0
+        fi
         if ! is_repo_initialized "$HOME_REPO" 2>/dev/null; then
             log_warn "Home repo not initialized. Initializing now..."
             init_repo "$HOME_REPO" || die "Failed to initialize home repo"
         fi
     fi
     if [[ "$backup_type" == "system" || "$backup_type" == "all" ]]; then
+        if ! is_repo_online "$SYSTEM_REPO"; then
+            log_warn "System backup repository is offline (external drive unmounted or unplugged). Skipping backup gracefully."
+            exit 0
+        fi
         if ! is_repo_initialized "$SYSTEM_REPO" 2>/dev/null; then
             log_warn "System repo not initialized. Initializing now..."
             init_repo "$SYSTEM_REPO" || die "Failed to initialize system repo"

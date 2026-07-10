@@ -541,6 +541,41 @@ setup_restic_env() {
     export RESTIC_CACHE_DIR="${DATA_DIR:-$DEFAULT_DATA_DIR}/cache/restic"
 }
 
+# Check if local repository path is online (not unplugged/unmounted)
+is_repo_online() {
+    local repo_path="$1"
+    
+    # If it's a remote repo (rclone:, sftp:, etc.), assume online (network handled by restic)
+    if [[ "$repo_path" =~ ^[a-zA-Z0-9_-]+: ]]; then
+        return 0
+    fi
+    
+    local check_dir="$repo_path"
+    while [[ "$check_dir" != "/" && -n "$check_dir" ]]; do
+        if [[ "$check_dir" =~ ^/(mnt|media|run/media)/[^/]+$ ]]; then
+            if [[ -d "$check_dir" ]]; then
+                if ! mountpoint -q "$check_dir" 2>/dev/null; then
+                    return 1 # Directory exists but is not mounted
+                fi
+            else
+                return 1 # Mount point directory doesn't even exist
+            fi
+        fi
+        check_dir=$(dirname "$check_dir")
+    done
+    
+    # Soft check if the directory doesn't exist and parent lies on mount points
+    if [[ "$repo_path" =~ ^/(mnt|media|run/media)/ ]]; then
+        local base_mount
+        base_mount=$(echo "$repo_path" | cut -d/ -f1-3)
+        if [[ ! -d "$base_mount" ]] || ! mountpoint -q "$base_mount" 2>/dev/null; then
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
 # Check if a restic repo is initialized
 is_repo_initialized() {
     local repo="$1"

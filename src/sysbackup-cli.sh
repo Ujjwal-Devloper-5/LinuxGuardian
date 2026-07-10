@@ -26,6 +26,7 @@ COMMANDS:
     snapshots         List all backup snapshots
     restore           Restore files from a snapshot
     config            Manage configuration
+    relocate          Relocate local backup repositories
     cloud             Cloud storage management
     schedule          Manage backup schedule
     health            Show backup health report
@@ -93,15 +94,25 @@ cmd_status() {
         # 3. Repository Stats
         local home_snap="None" home_date="Never" sys_snap="None" sys_date="Never"
         
-        if is_repo_initialized "${HOME_REPO:-}" 2>/dev/null; then
-            source "${SYSBACKUP_LIB_DIR}/modules/backup_engine.sh" 2>/dev/null || true
-            home_snap=$(setup_restic_env "${HOME_REPO:-}"; restic snapshots --json --tag "type=home" --latest 1 2>/dev/null | jq -r ".[0].short_id // \"None\"")
-            home_date=$(setup_restic_env "${HOME_REPO:-}"; restic snapshots --json --tag "type=home" --latest 1 2>/dev/null | jq -r ".[0].time // \"Never\"" | sed 's/T/ /' | cut -d. -f1)
+        if is_repo_online "${HOME_REPO:-}" 2>/dev/null; then
+            if is_repo_initialized "${HOME_REPO:-}" 2>/dev/null; then
+                source "${SYSBACKUP_LIB_DIR}/modules/backup_engine.sh" 2>/dev/null || true
+                home_snap=$(setup_restic_env "${HOME_REPO:-}"; restic snapshots --json --tag "type=home" --latest 1 2>/dev/null | jq -r ".[0].short_id // \"None\"")
+                home_date=$(setup_restic_env "${HOME_REPO:-}"; restic snapshots --json --tag "type=home" --latest 1 2>/dev/null | jq -r ".[0].time // \"Never\"" | sed 's/T/ /' | cut -d. -f1)
+            fi
+        else
+            home_snap="OFFLINE 🔌"
+            home_date="Drive Unplugged"
         fi
 
-        if is_repo_initialized "${SYSTEM_REPO:-}" 2>/dev/null; then
-            sys_snap=$(setup_restic_env "${SYSTEM_REPO:-}"; restic snapshots --json --tag "type=system" --latest 1 2>/dev/null | jq -r ". [0].short_id // \"None\"")
-            sys_date=$(setup_restic_env "${SYSTEM_REPO:-}"; restic snapshots --json --tag "type=system" --latest 1 2>/dev/null | jq -r ". [0].time // \"Never\"" | sed 's/T/ /' | cut -d. -f1)
+        if is_repo_online "${SYSTEM_REPO:-}" 2>/dev/null; then
+            if is_repo_initialized "${SYSTEM_REPO:-}" 2>/dev/null; then
+                sys_snap=$(setup_restic_env "${SYSTEM_REPO:-}"; restic snapshots --json --tag "type=system" --latest 1 2>/dev/null | jq -r ".[0].short_id // \"None\"")
+                sys_date=$(setup_restic_env "${SYSTEM_REPO:-}"; restic snapshots --json --tag "type=system" --latest 1 2>/dev/null | jq -r ".[0].time // \"Never\"" | sed 's/T/ /' | cut -d. -f1)
+            fi
+        else
+            sys_snap="OFFLINE 🔌"
+            sys_date="Drive Unplugged"
         fi
 
         local home_card sys_card
@@ -242,6 +253,116 @@ cmd_config() {
     fi
 }
 
+# ── Relocation ────────────────────────────────────────────────
+cmd_relocate() {
+    require_root
+    
+    tui_header "Relocate Backup Repositories" "Move local repositories to a new drive"
+    
+    # 1. Show current paths
+    echo -e "Current Repository Paths:"
+    echo -e "  Home Repo   : ${HOME_REPO:-Not configured}"
+    echo -e "  System Repo : ${SYSTEM_REPO:-Not configured}"
+    echo ""
+    
+    # Check if they are local paths
+    if [[ ! "${HOME_REPO:-}" =~ ^/ ]] || [[ ! "${SYSTEM_REPO:-}" =~ ^/ ]]; then
+        log_error "Relocation is only supported for local repository paths starting with /"
+        return 1
+    fi
+    
+    # 2. Ask for new parent directory
+    local new_parent
+    new_parent=$(tui_input "Enter new parent directory (e.g. /mnt/portable)" "")
+    if [[ -z "$new_parent" ]]; then
+        log_error "Parent directory cannot be empty."
+        return 1
+    fi
+    
+    # Check if the parent directory exists
+    if [[ ! -d "$new_parent" ]]; then
+        log_warn "Directory '$new_parent' does not exist."
+        if tui_confirm "Would you like to create it now?" "yes"; then
+            mkdir -p "$new_parent" || { log_error "Failed to create directory."; return 1; }
+        else
+            log_error "Target directory must exist."
+            return 1
+        fi
+    fi
+    
+    local new_home_repo="${new_parent}/repos/home"
+    local new_system_repo="${new_parent}/repos/system"
+    
+    echo ""
+    echo -e "New Repository Paths will be:"
+    echo -e "  Home Repo   : $new_home_repo"
+    echo -e "  System Repo : $new_system_repo"
+    echo ""
+    
+    # 3. Ask if they want to move existing files
+    local move_files
+    move_files=$(tui_confirm "Move existing repository files to the new location?" "yes")
+    
+    if [[ "$move_files" == "true" ]]; then
+        # Move Home Repo
+        if [[ -d "$HOME_REPO" ]]; then
+            log_info "Moving Home Repository from $HOME_REPO to $new_home_repo..."
+            mkdir -p "$(dirname "$new_home_repo")"
+            if cp -rp "$HOME_REPO" "$new_home_repo"; then
+                # Remove old repo after successful copy
+                rm -rf "$HOME_REPO"
+                tui_success "Home repository files moved."
+            else
+                log_error "Failed to copy Home repository files."
+                return 1
+            fi
+        else
+            log_warn "Home repository directory does not exist locally. Skipping file copy."
+        fi
+        
+        # Move System Repo
+        if [[ -d "$SYSTEM_REPO" ]]; then
+            log_info "Moving System Repository from $SYSTEM_REPO to $new_system_repo..."
+            mkdir -p "$(dirname "$new_system_repo")"
+            if cp -rp "$SYSTEM_REPO" "$new_system_repo"; then
+                # Remove old repo after successful copy
+                rm -rf "$SYSTEM_REPO"
+                tui_success "System repository files moved."
+            else
+                log_error "Failed to copy System repository files."
+                return 1
+            fi
+        else
+            log_warn "System repository directory does not exist locally. Skipping file copy."
+        fi
+    fi
+    
+    # 4. Update configuration file
+    log_info "Updating configuration file /etc/sysbackup/sysbackup.conf..."
+    sed -i "s|^HOME_REPO=.*|HOME_REPO=\"$new_home_repo\"|g" /etc/sysbackup/sysbackup.conf
+    sed -i "s|^SYSTEM_REPO=.*|SYSTEM_REPO=\"$new_system_repo\"|g" /etc/sysbackup/sysbackup.conf
+    
+    # 5. Reload configuration in memory
+    HOME_REPO="$new_home_repo"
+    SYSTEM_REPO="$new_system_repo"
+    
+    # 6. Verify link
+    tui_success "Configuration updated successfully!"
+    echo ""
+    log_info "Verifying new repository connections..."
+    if is_repo_online "$HOME_REPO" && is_repo_initialized "$HOME_REPO" 2>/dev/null; then
+        tui_success "Home repository verified at new location."
+    else
+        log_warn "Could not verify Home repository. You may need to run: sysbackup init"
+    fi
+    
+    if is_repo_online "$SYSTEM_REPO" && is_repo_initialized "$SYSTEM_REPO" 2>/dev/null; then
+        tui_success "System repository verified at new location."
+    else
+        log_warn "Could not verify System repository. You may need to run: sysbackup init"
+    fi
+}
+
 # ── Main Dispatcher ───────────────────────────────────────────
 main() {
     if [[ $# -eq 0 ]]; then
@@ -256,6 +377,10 @@ main() {
         init)
             require_root
             exec "${SYSBACKUP_LIB_DIR}/init-wizard.sh" "$@"
+            ;;
+        relocate)
+            require_root
+            cmd_relocate "$@"
             ;;
         run)
             exec "/usr/local/bin/sysbackup.sh" "$@"
