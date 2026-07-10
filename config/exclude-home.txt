@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Home Directory Exclude Patterns
+#  SystemBackup — Home Directory Exclude Patterns
 #  These paths are EXCLUDED from /home backups.
 #  One pattern per line. Lines starting with # are comments.
 #  Patterns are relative to the backup root.

@@ -1,10 +1,10 @@
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Full System Backup Timer
+#  SystemBackup — Full System Backup Timer
 #  Fires weekly on Sunday at 03:00 with a 1-hour random jitter
 # ═══════════════════════════════════════════════════════════════
 
 [Unit]
-Description=LinuxGuardian — Weekly System Backup Timer
+Description=SystemBackup — Weekly System Backup Timer
 Documentation=https://github.com/systembackup/systembackup
 
 [Timer]

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Test: Backup Engine
+#  SystemBackup — Test: Backup Engine
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
 # Setup environment for testing
-export SYSBACKUP_LIB_DIR="/usr/local/lib/linuxguardian"
-export DATA_DIR="/tmp/linuxguardian-tests"
+export SYSBACKUP_LIB_DIR="/usr/local/lib/sysbackup"
+export DATA_DIR="/tmp/sysbackup-tests"
 export HOME_REPO="$DATA_DIR/repos/home"
 export SYSTEM_REPO="$DATA_DIR/repos/system"
 export RESTIC_PASSWORD_FILE="$DATA_DIR/.restic-password"

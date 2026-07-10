@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LinuxGuardian — Schedule Analyzer Helper
+SystemBackup — Schedule Analyzer Helper
 Analyzes historical CPU metrics to find optimal backup windows and detect sustained idle.
 No external dependencies. Uses only Python standard library.
 """

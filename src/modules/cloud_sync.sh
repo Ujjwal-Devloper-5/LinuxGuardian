@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Cloud Sync Module
+#  SystemBackup — Cloud Sync Module
 #  rclone-based cloud synchronization: sync, verify, usage,
 #  provider config, retry logic with exponential backoff.
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_CLOUD_SYNC_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_CLOUD_SYNC_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly CLOUD_SYNC_VERSION="1.0.0"
-readonly CLOUD_SYNC_MAX_RETRIES=3
-readonly CLOUD_SYNC_INITIAL_BACKOFF_SEC=30
+CLOUD_SYNC_VERSION="1.0.0"
+CLOUD_SYNC_MAX_RETRIES=3
+CLOUD_SYNC_INITIAL_BACKOFF_SEC=30
 
 # ═══════════════════════════════════════════════════════════════
 #  RETRY LOGIC (Exponential Backoff)
@@ -98,10 +102,10 @@ _get_cloud_destination() {
     local cloud_remote
     cloud_remote=$(config_get "CLOUD_REMOTE" "")
     local cloud_path
-    cloud_path=$(config_get "CLOUD_PATH" "linuxguardian")
+    cloud_path=$(config_get "CLOUD_PATH" "sysbackup")
 
     if [[ -z "$cloud_remote" ]]; then
-        die "CLOUD_REMOTE is not configured. Set it in linuxguardian.conf."
+        die "CLOUD_REMOTE is not configured. Set it in sysbackup.conf."
     fi
 
     echo "${cloud_remote}:${cloud_path}"
@@ -127,10 +131,10 @@ _cloud_enabled_check() {
 # Uses --checksum for data integrity during transfer
 sync_to_cloud() {
     local repo_path="${1:?Usage: sync_to_cloud <repo_path>}"
+    local subpath="${2:-}"
 
     log_section "Cloud Sync: Upload"
 
-    # Preflight checks
     _cloud_enabled_check || return 0
     check_dependency "rclone" "rclone" "true" || return 1
 
@@ -140,6 +144,9 @@ sync_to_cloud() {
 
     local destination
     destination=$(_get_cloud_destination)
+    if [[ -n "$subpath" ]]; then
+        destination="${destination}/${subpath}"
+    fi
 
     log_info "Source      : $repo_path"
     log_info "Destination : $destination"
@@ -152,12 +159,12 @@ sync_to_cloud() {
 
     # Build the sync command
     local -a sync_cmd=(
-        rclone sync
+        rclone sync --progress
         "$repo_path"
         "$destination"
         --checksum              # Use checksums instead of timestamps
         --stats 30s             # Print stats every 30 seconds
-        --stats-one-line        # Compact stats output
+        --stats-one-line --stats 1s        # Compact stats output
         --log-level INFO
     )
     sync_cmd+=("${rclone_flags[@]}")
@@ -186,7 +193,7 @@ sync_to_cloud() {
 
         # Record sync metric
         local data_dir
-        data_dir=$(config_get "DATA_DIR" "/var/lib/linuxguardian")
+        data_dir=$(config_get "DATA_DIR" "/var/lib/sysbackup")
         record_metric "${data_dir}/data/cloud_sync.log" \
             "sync,$repo_path,$destination,$duration,success"
         return 0
@@ -197,7 +204,7 @@ sync_to_cloud() {
         log_error "Cloud sync FAILED after $(human_duration "$duration")"
 
         local data_dir
-        data_dir=$(config_get "DATA_DIR" "/var/lib/linuxguardian")
+        data_dir=$(config_get "DATA_DIR" "/var/lib/sysbackup")
         record_metric "${data_dir}/data/cloud_sync.log" \
             "sync,$repo_path,$destination,$duration,failed"
         return 1
@@ -247,7 +254,7 @@ verify_cloud_sync() {
     start_epoch=$(date +%s)
 
     local check_output exit_code=0
-    check_output=$(mktemp /tmp/linuxguardian-rclone-check-XXXXXX.txt)
+    check_output=$(mktemp /tmp/sysbackup-rclone-check-XXXXXX.txt)
     trap "rm -f '$check_output'" RETURN
 
     if "${check_cmd[@]}" > "$check_output" 2>&1; then
@@ -257,7 +264,7 @@ verify_cloud_sync() {
         log_success "Cloud sync verification PASSED ($(human_duration "$duration"))"
 
         local data_dir
-        data_dir=$(config_get "DATA_DIR" "/var/lib/linuxguardian")
+        data_dir=$(config_get "DATA_DIR" "/var/lib/sysbackup")
         record_metric "${data_dir}/data/cloud_sync.log" \
             "verify,$repo_path,$destination,$duration,pass"
         return 0
@@ -275,7 +282,7 @@ verify_cloud_sync() {
         fi
 
         local data_dir
-        data_dir=$(config_get "DATA_DIR" "/var/lib/linuxguardian")
+        data_dir=$(config_get "DATA_DIR" "/var/lib/sysbackup")
         record_metric "${data_dir}/data/cloud_sync.log" \
             "verify,$repo_path,$destination,$duration,fail"
         return "$exit_code"
@@ -370,7 +377,7 @@ configure_cloud() {
     check_dependency "rclone" "rclone" "true" || return 1
 
     local cloud_remote
-    cloud_remote=$(config_get "CLOUD_REMOTE" "linuxguardian-cloud")
+    cloud_remote=$(config_get "CLOUD_REMOTE" "sysbackup-cloud")
     local rclone_config
     rclone_config=$(config_get "RCLONE_CONFIG" "")
 

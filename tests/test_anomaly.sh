@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Test: Anomaly Detection
+#  SystemBackup — Test: Anomaly Detection
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
 # Setup environment for testing
-export SYSBACKUP_LIB_DIR="/tmp/linuxguardian-tests/lib"
-export SYSBACKUP_DATA_DIR="/tmp/linuxguardian-tests/data"
+export SYSBACKUP_LIB_DIR="/tmp/sysbackup-tests/lib"
+export SYSBACKUP_DATA_DIR="/tmp/sysbackup-tests/data"
 mkdir -p "$SYSBACKUP_LIB_DIR/modules" "$SYSBACKUP_DATA_DIR/data"
 
 cat > "$SYSBACKUP_LIB_DIR/modules/utils.sh" << 'EOF'
@@ -19,7 +19,7 @@ record_metric() { echo "$2" >> "$1"; }
 EOF
 
 # Copy the actual script to test dir
-cp "/home/ujjwal/Project LinuxGuardian/src/ai/anomaly_detect.sh" "$SYSBACKUP_LIB_DIR/anomaly_detect.sh"
+cp "/home/ujjwal/Project SystemBackup/src/ai/anomaly_detect.sh" "$SYSBACKUP_LIB_DIR/anomaly_detect.sh"
 
 echo "==> Mocking historical data..."
 HISTORY_FILE="$SYSBACKUP_DATA_DIR/data/backup_sizes.log"
@@ -46,5 +46,5 @@ SMALL_SIZE=500000000
 check_anomaly "$SMALL_SIZE"
 
 echo "Cleaning up..."
-rm -rf "/tmp/linuxguardian-tests"
+rm -rf "/tmp/sysbackup-tests"
 echo "✅ Test complete!"

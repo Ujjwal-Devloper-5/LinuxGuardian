@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Idle Detection Module
+#  SystemBackup — Idle Detection Module
 #  Smart system idle detection combining CPU usage, user input
 #  idle time, and load average. Supports exponential backup
 #  deferral when the system is busy.
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_IDLE_DETECT_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_IDLE_DETECT_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly IDLE_DETECT_VERSION="1.0.0"
-readonly CPU_SAMPLE_INTERVAL_SEC=2   # Sampling window for CPU idle measurement
+IDLE_DETECT_VERSION="1.0.0"
+CPU_SAMPLE_INTERVAL_SEC=2   # Sampling window for CPU idle measurement
 
 # ── Defer tracking file ──────────────────────────────────────
 # Stores the number of times backup has been deferred in the current cycle
-readonly DEFER_STATE_FILE="${SYSBACKUP_DATA_DIR:-/var/lib/linuxguardian}/data/.defer_state"
+DEFER_STATE_FILE="${SYSBACKUP_DATA_DIR:-/var/lib/sysbackup}/data/.defer_state"
 
 # ═══════════════════════════════════════════════════════════════
 #  CPU IDLE PERCENTAGE
@@ -277,7 +281,7 @@ get_next_defer_interval() {
 # File: $DATA_DIR/data/cpu_stats.csv
 record_system_metrics() {
     local data_dir
-    data_dir=$(config_get "DATA_DIR" "/var/lib/linuxguardian")
+    data_dir=$(config_get "DATA_DIR" "/var/lib/sysbackup")
     local metrics_file="${data_dir}/data/cpu_stats.csv"
 
     # Ensure header exists

@@ -1,6 +1,6 @@
-# LinuxGuardian: Advanced AI-Powered Disaster Recovery
+# SystemBackup: Advanced AI-Powered Disaster Recovery
 
-**LinuxGuardian** is an enterprise-grade, AI-monitored, and high-speed backup solution designed specifically for Linux power users. It leverages the power of **Restic** for encryption and deduplication, and **Rclone** for multi-cloud synchronization, all orchestrated by a smart, self-healing AI engine.
+**SystemBackup** is an enterprise-grade, AI-monitored, and high-speed backup solution designed specifically for Linux power users. It leverages the power of **Restic** for encryption and deduplication, and **Rclone** for multi-cloud synchronization, all orchestrated by a smart, self-healing AI engine.
 
 ---
 
@@ -21,7 +21,7 @@
 ## Project Structure
 
 ```text
-Project LinuxGuardian/
+Project SystemBackup/
 |-- assets/             # Icons and notification sounds
 |-- config/             # Configuration templates and exclude lists
 |-- docs/               # In-depth Manual and Restore Guide
@@ -29,7 +29,7 @@ Project LinuxGuardian/
 |   |-- ai/             # AI & Statistical modules
 |   |-- helpers/        # Python-based predictive scripts
 |   |-- modules/        # Bash-based engine modules
-|   `-- linuxguardian-cli.sh # The main user interface
+|   `-- sysbackup-cli.sh # The main user interface
 |-- systemd/            # Systemd service and timer units
 |-- tests/              # Integrity and anomaly test suites
 `-- install.sh          # One-command automated installer
@@ -47,14 +47,14 @@ sudo pacman -S restic rclone jq bc python
 
 ### 2. Fast Install
 ```bash
-git clone https://github.com/your-repo/Project-LinuxGuardian.git
-cd Project-LinuxGuardian
+git clone https://github.com/your-repo/Project-SystemBackup.git
+cd Project-SystemBackup
 sudo ./install.sh
 ```
 
 ### 3. Initialize
 ```bash
-sudo linuxguardian init
+sudo sysbackup init
 ```
 *Follow the wizard to set up your encryption password and Google Drive integration.*
 
@@ -64,11 +64,11 @@ sudo linuxguardian init
 
 | Command | Description |
 | :--- | :--- |
-| `linuxguardian run --home` | Trigger an immediate personal data backup |
-| `linuxguardian run --system` | Trigger a full system configuration backup |
-| `linuxguardian status` | View the real-time AI health dashboard |
-| `linuxguardian restore` | Launch the interactive recovery orchestrator |
-| `linuxguardian health` | View a detailed AI diagnostic report |
+| `sysbackup run --home` | Trigger an immediate personal data backup |
+| `sysbackup run --system` | Trigger a full system configuration backup |
+| `sysbackup status` | View the real-time AI health dashboard |
+| `sysbackup restore` | Launch the interactive recovery orchestrator |
+| `sysbackup health` | View a detailed AI diagnostic report |
 
 ---
 

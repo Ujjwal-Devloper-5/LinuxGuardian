@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Uninstaller
-#  Cleanly removes LinuxGuardian from the system.
+#  SystemBackup — Uninstaller
+#  Cleanly removes SystemBackup from the system.
 #  Usage:  sudo bash uninstall.sh
 # ═══════════════════════════════════════════════════════════════
 
@@ -87,15 +87,15 @@ log_info "Running as root — OK"
 #  STEP 2 — Stop & Disable Services
 # ═══════════════════════════════════════════════════════════════
 
-log_section "Stopping LinuxGuardian Services"
+log_section "Stopping SystemBackup Services"
 
 SYSBACKUP_UNITS=(
-    linuxguardian-home.timer
-    linuxguardian-system.timer
-    linuxguardian-monitor.timer
-    linuxguardian-home.service
-    linuxguardian-system.service
-    linuxguardian-monitor.service
+    sysbackup-home.timer
+    sysbackup-system.timer
+    sysbackup-monitor.timer
+    sysbackup-home.service
+    sysbackup-system.service
+    sysbackup-monitor.service
 )
 
 for unit in "${SYSBACKUP_UNITS[@]}"; do
@@ -109,7 +109,7 @@ for unit in "${SYSBACKUP_UNITS[@]}"; do
     fi
 done
 
-log_success "All LinuxGuardian services stopped and disabled"
+log_success "All SystemBackup services stopped and disabled"
 
 # ═══════════════════════════════════════════════════════════════
 #  STEP 3 — Remove Binary
@@ -117,20 +117,20 @@ log_success "All LinuxGuardian services stopped and disabled"
 
 log_section "Removing Installed Files"
 
-if [[ -f /usr/local/bin/linuxguardian ]]; then
-    rm -f /usr/local/bin/linuxguardian
-    log_info "Removed /usr/local/bin/linuxguardian"
+if [[ -f /usr/local/bin/sysbackup ]]; then
+    rm -f /usr/local/bin/sysbackup
+    log_info "Removed /usr/local/bin/sysbackup"
 else
-    log_info "Binary not found at /usr/local/bin/linuxguardian — already removed"
+    log_info "Binary not found at /usr/local/bin/sysbackup — already removed"
 fi
 
 # ═══════════════════════════════════════════════════════════════
 #  STEP 4 — Remove Library Directory
 # ═══════════════════════════════════════════════════════════════
 
-if [[ -d /usr/local/lib/linuxguardian ]]; then
-    rm -rf /usr/local/lib/linuxguardian
-    log_info "Removed /usr/local/lib/linuxguardian/"
+if [[ -d /usr/local/lib/sysbackup ]]; then
+    rm -rf /usr/local/lib/sysbackup
+    log_info "Removed /usr/local/lib/sysbackup/"
 else
     log_info "Library directory not found — already removed"
 fi
@@ -140,7 +140,7 @@ fi
 # ═══════════════════════════════════════════════════════════════
 
 UNITS_REMOVED=0
-for unit_file in /etc/systemd/system/linuxguardian-*.service /etc/systemd/system/linuxguardian-*.timer; do
+for unit_file in /etc/systemd/system/sysbackup-*.service /etc/systemd/system/sysbackup-*.timer; do
     if [[ -f "$unit_file" ]]; then
         rm -f "$unit_file"
         ((UNITS_REMOVED++))
@@ -166,17 +166,17 @@ log_success "systemd daemon reloaded"
 
 log_section "Optional Cleanup"
 
-if [[ -d /var/lib/linuxguardian ]]; then
+if [[ -d /var/lib/sysbackup ]]; then
     printf "\n"
-    log_warn "Data directory exists: /var/lib/linuxguardian"
+    log_warn "Data directory exists: /var/lib/sysbackup"
     log_warn "This contains backup data, logs, repos, and cache."
     printf "\n"
 
-    if ask_yes_no "  Remove ALL backup data (/var/lib/linuxguardian)?" "n"; then
-        rm -rf /var/lib/linuxguardian
-        log_info "Removed /var/lib/linuxguardian/"
+    if ask_yes_no "  Remove ALL backup data (/var/lib/sysbackup)?" "n"; then
+        rm -rf /var/lib/sysbackup
+        log_info "Removed /var/lib/sysbackup/"
     else
-        log_info "Kept /var/lib/linuxguardian/ (your data is preserved)"
+        log_info "Kept /var/lib/sysbackup/ (your data is preserved)"
     fi
 fi
 
@@ -184,17 +184,17 @@ fi
 #  STEP 8 — Ask: Remove Config?
 # ═══════════════════════════════════════════════════════════════
 
-if [[ -d /etc/linuxguardian ]]; then
+if [[ -d /etc/sysbackup ]]; then
     printf "\n"
-    log_warn "Configuration directory exists: /etc/linuxguardian"
+    log_warn "Configuration directory exists: /etc/sysbackup"
     log_warn "This contains your backup configuration and exclude lists."
     printf "\n"
 
-    if ask_yes_no "  Remove ALL configuration (/etc/linuxguardian)?" "n"; then
-        rm -rf /etc/linuxguardian
-        log_info "Removed /etc/linuxguardian/"
+    if ask_yes_no "  Remove ALL configuration (/etc/sysbackup)?" "n"; then
+        rm -rf /etc/sysbackup
+        log_info "Removed /etc/sysbackup/"
     else
-        log_info "Kept /etc/linuxguardian/ (your config is preserved)"
+        log_info "Kept /etc/sysbackup/ (your config is preserved)"
     fi
 fi
 
@@ -202,9 +202,9 @@ fi
 #  STEP 9 — Remove Sound Files
 # ═══════════════════════════════════════════════════════════════
 
-if [[ -d /usr/share/linuxguardian ]]; then
-    rm -rf /usr/share/linuxguardian
-    log_info "Removed /usr/share/linuxguardian/"
+if [[ -d /usr/share/sysbackup ]]; then
+    rm -rf /usr/share/sysbackup
+    log_info "Removed /usr/share/sysbackup/"
 fi
 
 # ═══════════════════════════════════════════════════════════════
@@ -214,12 +214,12 @@ fi
 printf "\n"
 log_section "Uninstall Complete"
 printf "\n"
-printf "${CLR_GREEN}  ✅  LinuxGuardian has been uninstalled.${CLR_RESET}\n\n"
+printf "${CLR_GREEN}  ✅  SystemBackup has been uninstalled.${CLR_RESET}\n\n"
 
-if [[ -d /var/lib/linuxguardian ]] || [[ -d /etc/linuxguardian ]]; then
+if [[ -d /var/lib/sysbackup ]] || [[ -d /etc/sysbackup ]]; then
     printf "${CLR_DIM}  Note: Some directories were preserved at your request.${CLR_RESET}\n"
-    [[ -d /var/lib/linuxguardian ]] && printf "${CLR_DIM}    → /var/lib/linuxguardian  (backup data)${CLR_RESET}\n"
-    [[ -d /etc/linuxguardian ]]     && printf "${CLR_DIM}    → /etc/linuxguardian      (configuration)${CLR_RESET}\n"
+    [[ -d /var/lib/sysbackup ]] && printf "${CLR_DIM}    → /var/lib/sysbackup  (backup data)${CLR_RESET}\n"
+    [[ -d /etc/sysbackup ]]     && printf "${CLR_DIM}    → /etc/sysbackup      (configuration)${CLR_RESET}\n"
     printf "\n"
 fi
 

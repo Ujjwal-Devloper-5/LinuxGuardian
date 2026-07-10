@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Installer
+#  SystemBackup — Installer
 #  One-command install for any major Linux distribution.
 #  Usage:  sudo bash install.sh
 # ═══════════════════════════════════════════════════════════════
@@ -177,27 +177,27 @@ fi
 log_section "Creating Directory Structure"
 
 # Library directories
-install -d -m 755 /usr/local/lib/linuxguardian/modules
-install -d -m 755 /usr/local/lib/linuxguardian/ai
-install -d -m 755 /usr/local/lib/linuxguardian/helpers
-log_info "Created /usr/local/lib/linuxguardian/{modules,ai,helpers}"
+install -d -m 755 /usr/local/lib/sysbackup/modules
+install -d -m 755 /usr/local/lib/sysbackup/ai
+install -d -m 755 /usr/local/lib/sysbackup/helpers
+log_info "Created /usr/local/lib/sysbackup/{modules,ai,helpers}"
 
 # Config directory
-install -d -m 755 /etc/linuxguardian
-log_info "Created /etc/linuxguardian"
+install -d -m 755 /etc/sysbackup
+log_info "Created /etc/sysbackup"
 
 # Data directories
-install -d -m 750 /var/lib/linuxguardian
-install -d -m 750 /var/lib/linuxguardian/data
-install -d -m 750 /var/lib/linuxguardian/logs
-install -d -m 700 /var/lib/linuxguardian/repos
-install -d -m 750 /var/lib/linuxguardian/cache
-install -d -m 750 /var/lib/linuxguardian/config
-log_info "Created /var/lib/linuxguardian/{data,logs,repos,cache,config}"
+install -d -m 750 /var/lib/sysbackup
+install -d -m 750 /var/lib/sysbackup/data
+install -d -m 750 /var/lib/sysbackup/logs
+install -d -m 700 /var/lib/sysbackup/repos
+install -d -m 750 /var/lib/sysbackup/cache
+install -d -m 750 /var/lib/sysbackup/config
+log_info "Created /var/lib/sysbackup/{data,logs,repos,cache,config}"
 
 # Sound directory
-install -d -m 755 /usr/share/linuxguardian/sounds
-log_info "Created /usr/share/linuxguardian/sounds"
+install -d -m 755 /usr/share/sysbackup/sounds
+log_info "Created /usr/share/sysbackup/sounds"
 
 log_success "Directory structure ready"
 
@@ -209,40 +209,40 @@ log_section "Installing Source Files"
 
 # ── 6a. Module scripts ────────────────────────────────────────
 if compgen -G "${SCRIPT_DIR}/src/modules/"*.sh >/dev/null 2>&1; then
-    install -m 644 "${SCRIPT_DIR}"/src/modules/*.sh /usr/local/lib/linuxguardian/modules/
-    log_info "Installed modules → /usr/local/lib/linuxguardian/modules/"
+    install -m 644 "${SCRIPT_DIR}"/src/modules/*.sh /usr/local/lib/sysbackup/modules/
+    log_info "Installed modules → /usr/local/lib/sysbackup/modules/"
 else
     log_warn "No module scripts found in src/modules/"
 fi
 
 # ── 6b. AI scripts ───────────────────────────────────────────
 if compgen -G "${SCRIPT_DIR}/src/ai/"*.sh >/dev/null 2>&1; then
-    install -m 644 "${SCRIPT_DIR}"/src/ai/*.sh /usr/local/lib/linuxguardian/ai/
-    log_info "Installed AI modules → /usr/local/lib/linuxguardian/ai/"
+    install -m 644 "${SCRIPT_DIR}"/src/ai/*.sh /usr/local/lib/sysbackup/ai/
+    log_info "Installed AI modules → /usr/local/lib/sysbackup/ai/"
 else
     log_warn "No AI scripts found in src/ai/ — skipping"
 fi
 
 # ── 6c. Helper scripts ───────────────────────────────────────
 if compgen -G "${SCRIPT_DIR}/src/helpers/"*.py >/dev/null 2>&1; then
-    install -m 644 "${SCRIPT_DIR}"/src/helpers/*.py /usr/local/lib/linuxguardian/helpers/
-    log_info "Installed helpers → /usr/local/lib/linuxguardian/helpers/"
+    install -m 644 "${SCRIPT_DIR}"/src/helpers/*.py /usr/local/lib/sysbackup/helpers/
+    log_info "Installed helpers → /usr/local/lib/sysbackup/helpers/"
 else
     log_warn "No helper scripts found in src/helpers/ — skipping"
 fi
 
 # ── 6d. Main entry point (CLI) ───────────────────────────────
-# The CLI script is the main entry point (/usr/local/bin/linuxguardian)
-if [[ -f "${SCRIPT_DIR}/src/linuxguardian-cli.sh" ]]; then
-    install -m 755 "${SCRIPT_DIR}/src/linuxguardian-cli.sh" /usr/local/bin/linuxguardian
-    log_info "Installed CLI → /usr/local/bin/linuxguardian"
-elif [[ -f "${SCRIPT_DIR}/src/linuxguardian.sh" ]]; then
-    # Fallback: use linuxguardian.sh if CLI doesn't exist yet
-    install -m 755 "${SCRIPT_DIR}/src/linuxguardian.sh" /usr/local/bin/linuxguardian
-    log_info "Installed entry point → /usr/local/bin/linuxguardian"
+# The CLI script is the main entry point (/usr/local/bin/sysbackup)
+if [[ -f "${SCRIPT_DIR}/src/sysbackup-cli.sh" ]]; then
+    install -m 755 "${SCRIPT_DIR}/src/sysbackup-cli.sh" /usr/local/bin/sysbackup
+    log_info "Installed CLI → /usr/local/bin/sysbackup"
+elif [[ -f "${SCRIPT_DIR}/src/sysbackup.sh" ]]; then
+    # Fallback: use sysbackup.sh if CLI doesn't exist yet
+    install -m 755 "${SCRIPT_DIR}/src/sysbackup.sh" /usr/local/bin/sysbackup
+    log_info "Installed entry point → /usr/local/bin/sysbackup"
 else
-    log_warn "No entry point found (src/linuxguardian-cli.sh or src/linuxguardian.sh) — skipping"
-    log_warn "You will need to install the linuxguardian binary manually."
+    log_warn "No entry point found (src/sysbackup-cli.sh or src/sysbackup.sh) — skipping"
+    log_warn "You will need to install the sysbackup binary manually."
 fi
 
 log_success "Source files installed"
@@ -254,29 +254,29 @@ log_success "Source files installed"
 log_section "Installing Configuration"
 
 # Example config (never overwrite user's existing config)
-if [[ -f "${SCRIPT_DIR}/config/linuxguardian.conf.example" ]]; then
-    install -m 640 "${SCRIPT_DIR}/config/linuxguardian.conf.example" /etc/linuxguardian/linuxguardian.conf.example
-    log_info "Installed example config → /etc/linuxguardian/linuxguardian.conf.example"
+if [[ -f "${SCRIPT_DIR}/config/sysbackup.conf.example" ]]; then
+    install -m 640 "${SCRIPT_DIR}/config/sysbackup.conf.example" /etc/sysbackup/sysbackup.conf.example
+    log_info "Installed example config → /etc/sysbackup/sysbackup.conf.example"
 
     # If no live config exists, copy the example as default
-    if [[ ! -f /etc/linuxguardian/linuxguardian.conf ]]; then
-        install -m 640 "${SCRIPT_DIR}/config/linuxguardian.conf.example" /etc/linuxguardian/linuxguardian.conf
-        log_info "Created default config → /etc/linuxguardian/linuxguardian.conf"
+    if [[ ! -f /etc/sysbackup/sysbackup.conf ]]; then
+        install -m 640 "${SCRIPT_DIR}/config/sysbackup.conf.example" /etc/sysbackup/sysbackup.conf
+        log_info "Created default config → /etc/sysbackup/sysbackup.conf"
     else
-        log_info "Existing config preserved: /etc/linuxguardian/linuxguardian.conf"
+        log_info "Existing config preserved: /etc/sysbackup/sysbackup.conf"
     fi
 fi
 
 # Exclude lists
 if compgen -G "${SCRIPT_DIR}/config/exclude-"*.txt >/dev/null 2>&1; then
-    install -m 640 "${SCRIPT_DIR}"/config/exclude-*.txt /etc/linuxguardian/
-    log_info "Installed exclude lists → /etc/linuxguardian/"
+    install -m 640 "${SCRIPT_DIR}"/config/exclude-*.txt /etc/sysbackup/
+    log_info "Installed exclude lists → /etc/sysbackup/"
 fi
 
 # Importance config
 if [[ -f "${SCRIPT_DIR}/config/importance.conf" ]]; then
-    install -m 640 "${SCRIPT_DIR}/config/importance.conf" /etc/linuxguardian/importance.conf
-    log_info "Installed importance config → /etc/linuxguardian/importance.conf"
+    install -m 640 "${SCRIPT_DIR}/config/importance.conf" /etc/sysbackup/importance.conf
+    log_info "Installed importance config → /etc/sysbackup/importance.conf"
 fi
 
 log_success "Configuration files installed"
@@ -287,10 +287,10 @@ log_success "Configuration files installed"
 
 log_section "Installing systemd Units"
 
-if compgen -G "${SCRIPT_DIR}/systemd/linuxguardian-"*.service >/dev/null 2>&1 || \
-   compgen -G "${SCRIPT_DIR}/systemd/linuxguardian-"*.timer >/dev/null 2>&1; then
+if compgen -G "${SCRIPT_DIR}/systemd/sysbackup-"*.service >/dev/null 2>&1 || \
+   compgen -G "${SCRIPT_DIR}/systemd/sysbackup-"*.timer >/dev/null 2>&1; then
 
-    for unit_file in "${SCRIPT_DIR}"/systemd/linuxguardian-*.{service,timer}; do
+    for unit_file in "${SCRIPT_DIR}"/systemd/sysbackup-*.{service,timer}; do
         [[ -f "$unit_file" ]] || continue
         install -m 644 "$unit_file" /etc/systemd/system/
         log_info "Installed $(basename "$unit_file") → /etc/systemd/system/"
@@ -312,26 +312,26 @@ SOUNDS_INSTALLED=0
 if [[ -d "${SCRIPT_DIR}/assets/sounds" ]] && compgen -G "${SCRIPT_DIR}/assets/sounds/"* >/dev/null 2>&1; then
     for sound_file in "${SCRIPT_DIR}"/assets/sounds/*; do
         [[ -f "$sound_file" ]] || continue
-        install -m 644 "$sound_file" /usr/share/linuxguardian/sounds/
+        install -m 644 "$sound_file" /usr/share/sysbackup/sounds/
         ((SOUNDS_INSTALLED++))
     done
-    log_info "Installed ${SOUNDS_INSTALLED} sound file(s) → /usr/share/linuxguardian/sounds/"
+    log_info "Installed ${SOUNDS_INSTALLED} sound file(s) → /usr/share/sysbackup/sounds/"
 fi
 
 # Set up system sound fallbacks
 SYSTEM_SOUND_DIR="/usr/share/sounds/freedesktop/stereo"
 if [[ -d "$SYSTEM_SOUND_DIR" ]]; then
     # Symlink system sounds as fallbacks if custom sounds are missing
-    if [[ ! -f /usr/share/linuxguardian/sounds/complete.oga ]] && [[ -f "${SYSTEM_SOUND_DIR}/complete.oga" ]]; then
-        ln -sf "${SYSTEM_SOUND_DIR}/complete.oga" /usr/share/linuxguardian/sounds/complete.oga
+    if [[ ! -f /usr/share/sysbackup/sounds/complete.oga ]] && [[ -f "${SYSTEM_SOUND_DIR}/complete.oga" ]]; then
+        ln -sf "${SYSTEM_SOUND_DIR}/complete.oga" /usr/share/sysbackup/sounds/complete.oga
         log_info "Linked fallback sound: complete.oga"
     fi
-    if [[ ! -f /usr/share/linuxguardian/sounds/dialog-warning.oga ]] && [[ -f "${SYSTEM_SOUND_DIR}/dialog-warning.oga" ]]; then
-        ln -sf "${SYSTEM_SOUND_DIR}/dialog-warning.oga" /usr/share/linuxguardian/sounds/dialog-warning.oga
+    if [[ ! -f /usr/share/sysbackup/sounds/dialog-warning.oga ]] && [[ -f "${SYSTEM_SOUND_DIR}/dialog-warning.oga" ]]; then
+        ln -sf "${SYSTEM_SOUND_DIR}/dialog-warning.oga" /usr/share/sysbackup/sounds/dialog-warning.oga
         log_info "Linked fallback sound: dialog-warning.oga"
     fi
-    if [[ ! -f /usr/share/linuxguardian/sounds/dialog-error.oga ]] && [[ -f "${SYSTEM_SOUND_DIR}/dialog-error.oga" ]]; then
-        ln -sf "${SYSTEM_SOUND_DIR}/dialog-error.oga" /usr/share/linuxguardian/sounds/dialog-error.oga
+    if [[ ! -f /usr/share/sysbackup/sounds/dialog-error.oga ]] && [[ -f "${SYSTEM_SOUND_DIR}/dialog-error.oga" ]]; then
+        ln -sf "${SYSTEM_SOUND_DIR}/dialog-error.oga" /usr/share/sysbackup/sounds/dialog-error.oga
         log_info "Linked fallback sound: dialog-error.oga"
     fi
 else
@@ -347,17 +347,17 @@ log_success "Sound files installed"
 log_section "Setting Permissions"
 
 # Repo directory must be tightly locked (contains restic repos)
-chmod 700 /var/lib/linuxguardian/repos
-log_info "Set /var/lib/linuxguardian/repos → 700"
+chmod 700 /var/lib/sysbackup/repos
+log_info "Set /var/lib/sysbackup/repos → 700"
 
 # Data directories — root group readable
-chmod 750 /var/lib/linuxguardian/data /var/lib/linuxguardian/logs \
-          /var/lib/linuxguardian/cache /var/lib/linuxguardian/config
+chmod 750 /var/lib/sysbackup/data /var/lib/sysbackup/logs \
+          /var/lib/sysbackup/cache /var/lib/sysbackup/config
 log_info "Set data directories → 750"
 
 # Config files — owner+group readable
-find /etc/linuxguardian -type f -exec chmod 640 {} \;
-log_info "Set /etc/linuxguardian/* → 640"
+find /etc/sysbackup -type f -exec chmod 640 {} \;
+log_info "Set /etc/sysbackup/* → 640"
 
 log_success "Permissions configured"
 
@@ -377,23 +377,23 @@ log_success "systemd daemon reloaded"
 printf "\n"
 log_section "Installation Complete!"
 printf "\n"
-printf "${CLR_GREEN}  ✅  LinuxGuardian v%s has been installed successfully!${CLR_RESET}\n\n" "$SYSBACKUP_VERSION"
+printf "${CLR_GREEN}  ✅  SystemBackup v%s has been installed successfully!${CLR_RESET}\n\n" "$SYSBACKUP_VERSION"
 
 printf "${CLR_BOLD}  Installed locations:${CLR_RESET}\n"
-printf "    Binary     : /usr/local/bin/linuxguardian\n"
-printf "    Libraries  : /usr/local/lib/linuxguardian/\n"
-printf "    Config     : /etc/linuxguardian/\n"
-printf "    Data       : /var/lib/linuxguardian/\n"
-printf "    Sounds     : /usr/share/linuxguardian/sounds/\n"
-printf "    Units      : /etc/systemd/system/linuxguardian-*\n\n"
+printf "    Binary     : /usr/local/bin/sysbackup\n"
+printf "    Libraries  : /usr/local/lib/sysbackup/\n"
+printf "    Config     : /etc/sysbackup/\n"
+printf "    Data       : /var/lib/sysbackup/\n"
+printf "    Sounds     : /usr/share/sysbackup/sounds/\n"
+printf "    Units      : /etc/systemd/system/sysbackup-*\n\n"
 
 printf "${CLR_BOLD}  Next steps:${CLR_RESET}\n"
-printf "    1. Edit your config:  ${CLR_CYAN}sudo nano /etc/linuxguardian/linuxguardian.conf${CLR_RESET}\n"
-printf "    2. Initialize repos:  ${CLR_CYAN}sudo linuxguardian init${CLR_RESET}\n"
+printf "    1. Edit your config:  ${CLR_CYAN}sudo nano /etc/sysbackup/sysbackup.conf${CLR_RESET}\n"
+printf "    2. Initialize repos:  ${CLR_CYAN}sudo sysbackup init${CLR_RESET}\n"
 printf "    3. Enable timers:\n"
-printf "       ${CLR_CYAN}sudo systemctl enable --now linuxguardian-home.timer${CLR_RESET}\n"
-printf "       ${CLR_CYAN}sudo systemctl enable --now linuxguardian-system.timer${CLR_RESET}\n"
-printf "       ${CLR_CYAN}sudo systemctl enable --now linuxguardian-monitor.timer${CLR_RESET}\n"
-printf "    4. Run your first backup:  ${CLR_CYAN}sudo linuxguardian run --home${CLR_RESET}\n\n"
+printf "       ${CLR_CYAN}sudo systemctl enable --now sysbackup-home.timer${CLR_RESET}\n"
+printf "       ${CLR_CYAN}sudo systemctl enable --now sysbackup-system.timer${CLR_RESET}\n"
+printf "       ${CLR_CYAN}sudo systemctl enable --now sysbackup-monitor.timer${CLR_RESET}\n"
+printf "    4. Run your first backup:  ${CLR_CYAN}sudo sysbackup run --home${CLR_RESET}\n\n"
 
-printf "${CLR_DIM}  For help: linuxguardian --help${CLR_RESET}\n\n"
+printf "${CLR_DIM}  For help: sysbackup --help${CLR_RESET}\n\n"

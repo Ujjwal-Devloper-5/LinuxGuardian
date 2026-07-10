@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Retention & Pruning Module
+#  SystemBackup — Retention & Pruning Module
 #  GFS (Grandfather-Father-Son) snapshot retention management.
 #  Handles restic forget/prune, snapshot listing, space savings
 #  calculation, and retention policy display.
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_RETENTION_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_RETENTION_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly RETENTION_VERSION="1.0.0"
+RETENTION_VERSION="1.0.0"
 
 # ═══════════════════════════════════════════════════════════════
 #  RETENTION POLICY
@@ -98,7 +102,7 @@ prune_snapshots() {
 
     # Execute pruning
     local prune_output exit_code=0
-    prune_output=$(mktemp /tmp/linuxguardian-prune-XXXXXX.json)
+    prune_output=$(mktemp /tmp/sysbackup-prune-XXXXXX.json)
     trap "rm -f '$prune_output'" RETURN
 
     if "${forget_cmd[@]}" > "$prune_output" 2>&1; then
@@ -143,7 +147,7 @@ prune_snapshots() {
 
     # Record metrics
     local data_dir
-    data_dir=$(config_get "DATA_DIR" "/var/lib/linuxguardian")
+    data_dir=$(config_get "DATA_DIR" "/var/lib/sysbackup")
     record_metric "${data_dir}/data/retention.log" \
         "${type:-all},$count_before,$count_after,$removed,$size_before,$size_after,$space_saved,$duration"
 

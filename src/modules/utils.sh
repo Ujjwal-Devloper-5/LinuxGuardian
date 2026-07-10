@@ -1,39 +1,49 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Shared Utilities & Logging
+#  SystemBackup — Shared Utilities & Logging
 #  All modules source this file for common functionality.
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_UTILS_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_UTILS_SH_LOADED=1
+
+
+if [[ -n "${_SYSBACKUP_UTILS_LOADED:-}" ]]; then
+    return 0
+fi
+_SYSBACKUP_UTILS_LOADED=1
+
 
 # ── Version ───────────────────────────────────────────────────
-readonly SYSBACKUP_VERSION="1.0.0"
-readonly SYSBACKUP_NAME="LinuxGuardian"
+SYSBACKUP_VERSION="1.0.0"
+SYSBACKUP_NAME="SystemBackup"
 
 # ── Color Codes (only if terminal supports it) ────────────────
 if [[ -t 1 ]] && command -v tput &>/dev/null && [[ $(tput colors 2>/dev/null || echo 0) -ge 8 ]]; then
-    readonly CLR_RESET="\033[0m"
-    readonly CLR_RED="\033[1;31m"
-    readonly CLR_GREEN="\033[1;32m"
-    readonly CLR_YELLOW="\033[1;33m"
-    readonly CLR_BLUE="\033[1;34m"
-    readonly CLR_MAGENTA="\033[1;35m"
-    readonly CLR_CYAN="\033[1;36m"
-    readonly CLR_GRAY="\033[0;37m"
-    readonly CLR_BOLD="\033[1m"
-    readonly CLR_DIM="\033[2m"
+    CLR_RESET="\033[0m"
+    CLR_RED="\033[1;31m"
+    CLR_GREEN="\033[1;32m"
+    CLR_YELLOW="\033[1;33m"
+    CLR_BLUE="\033[1;34m"
+    CLR_MAGENTA="\033[1;35m"
+    CLR_CYAN="\033[1;36m"
+    CLR_GRAY="\033[0;37m"
+    CLR_BOLD="\033[1m"
+    CLR_DIM="\033[2m"
 else
-    readonly CLR_RESET="" CLR_RED="" CLR_GREEN="" CLR_YELLOW=""
-    readonly CLR_BLUE="" CLR_MAGENTA="" CLR_CYAN="" CLR_GRAY=""
-    readonly CLR_BOLD="" CLR_DIM=""
+    CLR_RESET="" CLR_RED="" CLR_GREEN="" CLR_YELLOW=""
+    CLR_BLUE="" CLR_MAGENTA="" CLR_CYAN="" CLR_GRAY=""
+    CLR_BOLD="" CLR_DIM=""
 fi
 
 # ── Default Paths ─────────────────────────────────────────────
-readonly DEFAULT_CONFIG_FILE="/etc/linuxguardian/linuxguardian.conf"
-readonly DEFAULT_DATA_DIR="/var/lib/linuxguardian"
-readonly DEFAULT_LOG_DIR="/var/lib/linuxguardian/logs"
-readonly DEFAULT_LIB_DIR="/usr/local/lib/linuxguardian"
-readonly DEFAULT_LOCK_FILE="/var/run/linuxguardian.lock"
+DEFAULT_CONFIG_FILE="/etc/sysbackup/sysbackup.conf"
+DEFAULT_DATA_DIR="/var/lib/sysbackup"
+DEFAULT_LOG_DIR="/var/lib/sysbackup/logs"
+DEFAULT_LIB_DIR="/usr/local/lib/sysbackup"
+DEFAULT_LOCK_FILE="/var/run/sysbackup.lock"
 
 # ── Globals (set after config load) ───────────────────────────
 SYSBACKUP_CONFIG_FILE="${SYSBACKUP_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
@@ -91,19 +101,24 @@ log_debug() {
     fi
 }
 
+
 log_section() {
     local title="$1"
-    _log "INFO" "$CLR_CYAN" "━━" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    _log "INFO" "$CLR_CYAN" "▶" " $title"
-    _log "INFO" "$CLR_CYAN" "━━" "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    if check_command gum; then
+        echo ""
+        gum style --background 238 --foreground 39 --padding "0 2" --bold --width 82 "  $title  "
+    else
+        _log "SECTION" "$CLR_CYAN" "━━" "━━ $title ━━━━━━━━━━━━━━━━━━━━━━━━"
+    fi
 }
+
 
 # Initialize log file for this run
 init_log_file() {
     local backup_type="${1:-general}"
     local ts
     ts=$(date '+%Y-%m-%d_%H%M%S')
-    SYSBACKUP_LOG_FILE="${SYSBACKUP_LOG_DIR}/linuxguardian-${backup_type}-${ts}.log"
+    SYSBACKUP_LOG_FILE="${SYSBACKUP_LOG_DIR}/sysbackup-${backup_type}-${ts}.log"
     mkdir -p "$SYSBACKUP_LOG_DIR"
     touch "$SYSBACKUP_LOG_FILE"
     log_info "Log file initialized: $SYSBACKUP_LOG_FILE"
@@ -115,14 +130,14 @@ rotate_logs() {
     local count
     
     # 1. Rotate by age
-    count=$(find "$SYSBACKUP_LOG_DIR" -name "linuxguardian-*.log" -mtime "+${retention_days}" 2>/dev/null | wc -l)
+    count=$(find "$SYSBACKUP_LOG_DIR" -name "sysbackup-*.log" -mtime "+${retention_days}" 2>/dev/null | wc -l)
     if [[ "$count" -gt 0 ]]; then
-        find "$SYSBACKUP_LOG_DIR" -name "linuxguardian-*.log" -mtime "+${retention_days}" -delete
+        find "$SYSBACKUP_LOG_DIR" -name "sysbackup-*.log" -mtime "+${retention_days}" -delete
         log_info "Rotated $count old log files (older than ${retention_days} days)"
     fi
 
     # 2. Rotate by size (if log exceeds 10MB, truncate to prevent disk bloat)
-    find "$SYSBACKUP_LOG_DIR" -name "linuxguardian-*.log" -type f -size +10M 2>/dev/null | while read -r large_log; do
+    find "$SYSBACKUP_LOG_DIR" -name "sysbackup-*.log" -type f -size +10M 2>/dev/null | while read -r large_log; do
         if [[ -f "$large_log" ]]; then
             log_warn "Log file $large_log exceeded 10MB. Truncating to last 1MB."
             # Keep the last 1MB of logs for context, discard the rest
@@ -141,7 +156,7 @@ load_config() {
 
     if [[ ! -f "$config_file" ]]; then
         log_error "Configuration file not found: $config_file"
-        log_error "Run 'linuxguardian init' to create one."
+        log_error "Run 'sysbackup init' to create one."
         return 1
     fi
 
@@ -199,7 +214,7 @@ validate_config() {
     # Validate password file exists
     if [[ ! -f "${RESTIC_PASSWORD_FILE:-}" ]]; then
         log_error "Restic password file not found: ${RESTIC_PASSWORD_FILE}"
-        log_error "Run 'linuxguardian init' to set up."
+        log_error "Run 'sysbackup init' to set up."
         return 1
     fi
 
@@ -567,15 +582,12 @@ generate_password() {
 
 # Print a styled banner
 print_banner() {
-    printf "${CLR_CYAN}"
-    cat << 'BANNER'
-   ███████╗██╗   ██╗███████╗██████╗  █████╗  ██████╗██╗  ██╗██╗   ██╗██████╗
-   ██╔════╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██║   ██║██╔══██╗
-   ███████╗ ╚████╔╝ ███████╗██████╔╝███████║██║     █████╔╝ ██║   ██║██████╔╝
-   ╚════██║  ╚██╔╝  ╚════██║██╔══██╗██╔══██║██║     ██╔═██╗ ██║   ██║██╔═══╝
-   ███████║   ██║   ███████║██████╔╝██║  ██║╚██████╗██║  ██╗╚██████╔╝██║
-   ╚══════╝   ╚═╝   ╚══════╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝
-BANNER
-    printf "${CLR_RESET}\n"
-    printf "${CLR_DIM}   v%s — Advanced AI-Powered System Backup${CLR_RESET}\n\n" "$SYSBACKUP_VERSION"
+    if check_command gum; then
+        gum style --foreground 212 --bold "  🛡️  S Y S T E M   B A C K U P  v$SYSBACKUP_VERSION"
+        gum style --foreground 245 --italic "  Advanced AI-Powered System Protection"
+        echo ""
+    else
+        printf "${CLR_MAGENTA}${CLR_BOLD}  🛡️  SYSTEM BACKUP v%s${CLR_RESET}\n" "$SYSBACKUP_VERSION"
+        printf "${CLR_DIM}  Advanced AI-Powered System Protection${CLR_RESET}\n\n"
+    fi
 }

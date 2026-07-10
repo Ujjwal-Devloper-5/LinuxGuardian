@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Interactive Initialization Wizard
+#  SystemBackup — Interactive Initialization Wizard
 #  Guides the user through first-time setup with a beautiful
 #  TUI experience using gum (with whiptail/read fallback).
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
 
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
 
 # ═══════════════════════════════════════════════════════════════
@@ -247,7 +247,7 @@ wizard_welcome() {
                 --border-foreground 39 \
                 --padding "1 3" \
                 --margin "0 2" \
-                "Welcome to LinuxGuardian Setup Wizard!" \
+                "Welcome to SystemBackup Setup Wizard!" \
                 "" \
                 "This wizard will guide you through:" \
                 "  • Configuring backup locations" \
@@ -259,7 +259,7 @@ wizard_welcome() {
                 "Let's make your system backup-proof! 🛡️"
             ;;
         *)
-            printf "${CLR_CYAN}  Welcome to LinuxGuardian Setup Wizard!${CLR_RESET}\n\n"
+            printf "${CLR_CYAN}  Welcome to SystemBackup Setup Wizard!${CLR_RESET}\n\n"
             printf "  This wizard will guide you through:\n"
             printf "    • Configuring backup locations\n"
             printf "    • Setting up cloud storage\n"
@@ -278,8 +278,8 @@ wizard_step_general() {
     tui_header "Step 1/9: General Settings" "Basic backup configuration"
 
     WIZARD_SETTINGS[BACKUP_NAME]=$(tui_input "Backup name (hostname)" "$(get_hostname)")
-    WIZARD_SETTINGS[DATA_DIR]=$(tui_input "Data directory" "/var/lib/linuxguardian")
-    WIZARD_SETTINGS[LOG_DIR]=$(tui_input "Log directory" "${WIZARD_SETTINGS[DATA_DIR]}/logs")
+    WIZARD_SETTINGS[DATA_DIR]=$(tui_input "Data directory" "/var/lib/sysbackup")
+    WIZARD_SETTINGS[LOG_DIR]=$(tui_input "Log directory" "${WIZARD_SETTINGS[DATA_DIR]:-}/logs")
 
     tui_success "General settings configured"
 }
@@ -287,7 +287,7 @@ wizard_step_general() {
 wizard_step_storage() {
     tui_header "Step 2/9: Storage Locations" "Where to store backup repositories"
 
-    local default_base="${WIZARD_SETTINGS[DATA_DIR]}/repos"
+    local default_base="${WIZARD_SETTINGS[DATA_DIR]:-}/repos"
     WIZARD_SETTINGS[HOME_REPO]=$(tui_input "Home backup repo path" "${default_base}/home")
     WIZARD_SETTINGS[SYSTEM_REPO]=$(tui_input "System backup repo path" "${default_base}/system")
 
@@ -308,7 +308,7 @@ wizard_step_password() {
         "Enter my own password")
 
     local password=""
-    local password_file="${WIZARD_SETTINGS[DATA_DIR]}/.restic-password"
+    local password_file="${WIZARD_SETTINGS[DATA_DIR]:-}/.restic-password"
 
     if [[ "$pw_method" == *"Generate"* ]]; then
         password=$(generate_password 32)
@@ -375,8 +375,8 @@ wizard_step_cloud() {
         *)                     WIZARD_SETTINGS[CLOUD_PROVIDER]="manual" ;;
     esac
 
-    WIZARD_SETTINGS[CLOUD_REMOTE]=$(tui_input "Remote name" "linuxguardian-cloud")
-    WIZARD_SETTINGS[CLOUD_PATH]=$(tui_input "Remote path/bucket" "linuxguardian")
+    WIZARD_SETTINGS[CLOUD_REMOTE]=$(tui_input "Remote name" "sysbackup-cloud")
+    WIZARD_SETTINGS[CLOUD_PATH]=$(tui_input "Remote path/bucket" "sysbackup")
 
     tui_info "You'll need to configure rclone for ${provider}."
     echo ""
@@ -387,9 +387,9 @@ wizard_step_cloud() {
         tui_info "Follow the prompts to authenticate with ${provider}."
         echo ""
 
-        if [[ "${WIZARD_SETTINGS[CLOUD_PROVIDER]}" != "manual" ]]; then
-            rclone config create "${WIZARD_SETTINGS[CLOUD_REMOTE]}" \
-                "${WIZARD_SETTINGS[CLOUD_PROVIDER]}" 2>&1 || {
+        if [[ "${WIZARD_SETTINGS[CLOUD_PROVIDER]:-}" != "manual" ]]; then
+            rclone config create "${WIZARD_SETTINGS[CLOUD_REMOTE]:-}" \
+                "${WIZARD_SETTINGS[CLOUD_PROVIDER]:-}" 2>&1 || {
                 log_warn "rclone config failed. You can configure later with: rclone config"
             }
         else
@@ -399,7 +399,7 @@ wizard_step_cloud() {
         fi
     else
         tui_info "Configure later with: rclone config"
-        tui_info "Create a remote named '${WIZARD_SETTINGS[CLOUD_REMOTE]}'"
+        tui_info "Create a remote named '${WIZARD_SETTINGS[CLOUD_REMOTE]:-}'"
     fi
 
     local bw_limit
@@ -607,32 +607,32 @@ wizard_summary() {
     tui_header "Configuration Summary" "Review your settings"
 
     local summary=""
-    summary+="  Backup Name:        ${WIZARD_SETTINGS[BACKUP_NAME]}\n"
-    summary+="  Data Directory:     ${WIZARD_SETTINGS[DATA_DIR]}\n"
-    summary+="  Home Repo:          ${WIZARD_SETTINGS[HOME_REPO]}\n"
-    summary+="  System Repo:        ${WIZARD_SETTINGS[SYSTEM_REPO]}\n"
+    summary+="  Backup Name:        ${WIZARD_SETTINGS[BACKUP_NAME]:-}\n"
+    summary+="  Data Directory:     ${WIZARD_SETTINGS[DATA_DIR]:-}\n"
+    summary+="  Home Repo:          ${WIZARD_SETTINGS[HOME_REPO]:-}\n"
+    summary+="  System Repo:        ${WIZARD_SETTINGS[SYSTEM_REPO]:-}\n"
     summary+="  \n"
-    summary+="  Home Schedule:      ${WIZARD_SETTINGS[HOME_SCHEDULE]} at ${WIZARD_SETTINGS[HOME_TIME]}\n"
-    summary+="  System Schedule:    ${WIZARD_SETTINGS[SYSTEM_SCHEDULE]} on ${WIZARD_SETTINGS[SYSTEM_DAY]} at ${WIZARD_SETTINGS[SYSTEM_TIME]}\n"
+    summary+="  Home Schedule:      ${WIZARD_SETTINGS[HOME_SCHEDULE]:-} at ${WIZARD_SETTINGS[HOME_TIME]:-}\n"
+    summary+="  System Schedule:    ${WIZARD_SETTINGS[SYSTEM_SCHEDULE]:-} on ${WIZARD_SETTINGS[SYSTEM_DAY]:-} at ${WIZARD_SETTINGS[SYSTEM_TIME]:-}\n"
     summary+="  \n"
-    summary+="  Cloud Enabled:      ${WIZARD_SETTINGS[CLOUD_ENABLED]}\n"
-    if [[ "${WIZARD_SETTINGS[CLOUD_ENABLED]}" == "true" ]]; then
-        summary+="  Cloud Provider:     ${WIZARD_SETTINGS[CLOUD_PROVIDER]}\n"
-        summary+="  Cloud Remote:       ${WIZARD_SETTINGS[CLOUD_REMOTE]}:${WIZARD_SETTINGS[CLOUD_PATH]}\n"
+    summary+="  Cloud Enabled:      ${WIZARD_SETTINGS[CLOUD_ENABLED]:-}\n"
+    if [[ "${WIZARD_SETTINGS[CLOUD_ENABLED]:-}" == "true" ]]; then
+        summary+="  Cloud Provider:     ${WIZARD_SETTINGS[CLOUD_PROVIDER]:-}\n"
+        summary+="  Cloud Remote:       ${WIZARD_SETTINGS[CLOUD_REMOTE]:-}:${WIZARD_SETTINGS[CLOUD_PATH]:-}\n"
     fi
     summary+="  \n"
-    summary+="  CPU Quota:          ${WIZARD_SETTINGS[CPU_QUOTA]}\n"
-    summary+="  I/O Weight:         ${WIZARD_SETTINGS[IO_WEIGHT]}\n"
-    summary+="  Memory Limit:       ${WIZARD_SETTINGS[MEMORY_MAX]}\n"
+    summary+="  CPU Quota:          ${WIZARD_SETTINGS[CPU_QUOTA]:-}\n"
+    summary+="  I/O Weight:         ${WIZARD_SETTINGS[IO_WEIGHT]:-}\n"
+    summary+="  Memory Limit:       ${WIZARD_SETTINGS[MEMORY_MAX]:-}\n"
     summary+="  \n"
-    summary+="  Notifications:      ${WIZARD_SETTINGS[NOTIFY_ENABLED]}\n"
-    summary+="  Sound:              ${WIZARD_SETTINGS[NOTIFY_SOUND_ENABLED]}\n"
+    summary+="  Notifications:      ${WIZARD_SETTINGS[NOTIFY_ENABLED]:-}\n"
+    summary+="  Sound:              ${WIZARD_SETTINGS[NOTIFY_SOUND_ENABLED]:-}\n"
     summary+="  \n"
-    summary+="  Smart Scheduling:   ${WIZARD_SETTINGS[SMART_SCHEDULE_ENABLED]}\n"
-    summary+="  Anomaly Detection:  ${WIZARD_SETTINGS[ANOMALY_DETECTION]}\n"
-    summary+="  Storage Prediction: ${WIZARD_SETTINGS[STORAGE_PREDICTION]}\n"
+    summary+="  Smart Scheduling:   ${WIZARD_SETTINGS[SMART_SCHEDULE_ENABLED]:-}\n"
+    summary+="  Anomaly Detection:  ${WIZARD_SETTINGS[ANOMALY_DETECTION]:-}\n"
+    summary+="  Storage Prediction: ${WIZARD_SETTINGS[STORAGE_PREDICTION]:-}\n"
     summary+="  \n"
-    summary+="  Retention:          ${WIZARD_SETTINGS[KEEP_DAILY]}d / ${WIZARD_SETTINGS[KEEP_WEEKLY]}w / ${WIZARD_SETTINGS[KEEP_MONTHLY]}m / ${WIZARD_SETTINGS[KEEP_YEARLY]}y\n"
+    summary+="  Retention:          ${WIZARD_SETTINGS[KEEP_DAILY]:-}d / ${WIZARD_SETTINGS[KEEP_WEEKLY]:-}w / ${WIZARD_SETTINGS[KEEP_MONTHLY]:-}m / ${WIZARD_SETTINGS[KEEP_YEARLY]:-}y\n"
 
     case "$TUI_ENGINE" in
         gum)
@@ -654,8 +654,8 @@ wizard_summary() {
 }
 
 write_config() {
-    local config_dir="/etc/linuxguardian"
-    local config_file="${config_dir}/linuxguardian.conf"
+    local config_dir="/etc/sysbackup"
+    local config_file="${config_dir}/sysbackup.conf"
 
     log_info "Writing configuration..."
 
@@ -664,99 +664,99 @@ write_config() {
 
     # Map schedule to OnCalendar format for systemd timers
     local home_oncalendar system_oncalendar
-    case "${WIZARD_SETTINGS[HOME_SCHEDULE]}" in
-        daily)       home_oncalendar="*-*-* ${WIZARD_SETTINGS[HOME_TIME]}:00" ;;
+    case "${WIZARD_SETTINGS[HOME_SCHEDULE]:-}" in
+        daily)       home_oncalendar="*-*-* ${WIZARD_SETTINGS[HOME_TIME]:-}:00" ;;
         twice-daily) home_oncalendar="*-*-* 02,14:00:00" ;;
         6hours)      home_oncalendar="*-*-* 00/6:00:00" ;;
-        weekly)      home_oncalendar="Sun *-*-* ${WIZARD_SETTINGS[HOME_TIME]}:00" ;;
+        weekly)      home_oncalendar="Sun *-*-* ${WIZARD_SETTINGS[HOME_TIME]:-}:00" ;;
     esac
 
     local sys_day_short="${WIZARD_SETTINGS[SYSTEM_DAY]:0:3}"
-    case "${WIZARD_SETTINGS[SYSTEM_SCHEDULE]}" in
-        daily)    system_oncalendar="*-*-* ${WIZARD_SETTINGS[SYSTEM_TIME]}:00" ;;
-        weekly)   system_oncalendar="${sys_day_short} *-*-* ${WIZARD_SETTINGS[SYSTEM_TIME]}:00" ;;
-        biweekly) system_oncalendar="${sys_day_short} *-*-1/14 ${WIZARD_SETTINGS[SYSTEM_TIME]}:00" ;;
-        monthly)  system_oncalendar="*-*-01 ${WIZARD_SETTINGS[SYSTEM_TIME]}:00" ;;
+    case "${WIZARD_SETTINGS[SYSTEM_SCHEDULE]:-}" in
+        daily)    system_oncalendar="*-*-* ${WIZARD_SETTINGS[SYSTEM_TIME]:-}:00" ;;
+        weekly)   system_oncalendar="${sys_day_short} *-*-* ${WIZARD_SETTINGS[SYSTEM_TIME]:-}:00" ;;
+        biweekly) system_oncalendar="${sys_day_short} *-*-1/14 ${WIZARD_SETTINGS[SYSTEM_TIME]:-}:00" ;;
+        monthly)  system_oncalendar="*-*-01 ${WIZARD_SETTINGS[SYSTEM_TIME]:-}:00" ;;
     esac
 
     cat > "$config_file" << CONF
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Configuration File
+#  SystemBackup — Configuration File
 #  Generated: $(date '+%Y-%m-%d %H:%M:%S')
 #  Hostname: $(hostname)
 # ═══════════════════════════════════════════════════════════════
 
 # ── General ───────────────────────────────────────────────────
-BACKUP_NAME="${WIZARD_SETTINGS[BACKUP_NAME]}"
-DATA_DIR="${WIZARD_SETTINGS[DATA_DIR]}"
-LOG_DIR="${WIZARD_SETTINGS[LOG_DIR]}"
+BACKUP_NAME="${WIZARD_SETTINGS[BACKUP_NAME]:-}"
+DATA_DIR="${WIZARD_SETTINGS[DATA_DIR]:-}"
+LOG_DIR="${WIZARD_SETTINGS[LOG_DIR]:-}"
 LOG_RETENTION_DAYS=30
 
 # ── Backup Repositories ──────────────────────────────────────
-HOME_REPO="${WIZARD_SETTINGS[HOME_REPO]}"
-SYSTEM_REPO="${WIZARD_SETTINGS[SYSTEM_REPO]}"
-RESTIC_PASSWORD_FILE="${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]}"
+HOME_REPO="${WIZARD_SETTINGS[HOME_REPO]:-}"
+SYSTEM_REPO="${WIZARD_SETTINGS[SYSTEM_REPO]:-}"
+RESTIC_PASSWORD_FILE="${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]:-}"
 
 # ── Backup Sources ────────────────────────────────────────────
 HOME_SOURCES="/home"
 SYSTEM_SOURCES="/"
-HOME_EXCLUDE_FILE="/etc/linuxguardian/exclude-home.txt"
-SYSTEM_EXCLUDE_FILE="/etc/linuxguardian/exclude-system.txt"
+HOME_EXCLUDE_FILE="/etc/sysbackup/exclude-home.txt"
+SYSTEM_EXCLUDE_FILE="/etc/sysbackup/exclude-system.txt"
 
 # ── Schedule ──────────────────────────────────────────────────
-HOME_SCHEDULE="${WIZARD_SETTINGS[HOME_SCHEDULE]}"
-HOME_TIME="${WIZARD_SETTINGS[HOME_TIME]}"
-HOME_ONCALENDAR="${home_oncalendar}"
-SYSTEM_SCHEDULE="${WIZARD_SETTINGS[SYSTEM_SCHEDULE]}"
-SYSTEM_DAY="${WIZARD_SETTINGS[SYSTEM_DAY]}"
-SYSTEM_TIME="${WIZARD_SETTINGS[SYSTEM_TIME]}"
-SYSTEM_ONCALENDAR="${system_oncalendar}"
+HOME_SCHEDULE="${WIZARD_SETTINGS[HOME_SCHEDULE]:-}"
+HOME_TIME="${WIZARD_SETTINGS[HOME_TIME]:-}"
+HOME_ONCALENDAR="${home_oncalendar:-*-*-* 02:00:00}"
+SYSTEM_SCHEDULE="${WIZARD_SETTINGS[SYSTEM_SCHEDULE]:-}"
+SYSTEM_DAY="${WIZARD_SETTINGS[SYSTEM_DAY]:-}"
+SYSTEM_TIME="${WIZARD_SETTINGS[SYSTEM_TIME]:-}"
+SYSTEM_ONCALENDAR="${system_oncalendar:-Sun *-*-* 03:00:00}"
 
 # ── Smart Scheduling (AI) ────────────────────────────────────
-SMART_SCHEDULE_ENABLED=${WIZARD_SETTINGS[SMART_SCHEDULE_ENABLED]}
+SMART_SCHEDULE_ENABLED=${WIZARD_SETTINGS[SMART_SCHEDULE_ENABLED]:-}
 IDLE_THRESHOLD_MS=600000
 CPU_IDLE_THRESHOLD=80
 MAX_DEFER_HOURS=${WIZARD_SETTINGS[MAX_DEFER_HOURS]:-6}
 METRICS_INTERVAL_SEC=300
 
 # ── Cloud Sync ────────────────────────────────────────────────
-CLOUD_ENABLED=${WIZARD_SETTINGS[CLOUD_ENABLED]}
+CLOUD_ENABLED=${WIZARD_SETTINGS[CLOUD_ENABLED]:-}
 CLOUD_REMOTE="${WIZARD_SETTINGS[CLOUD_REMOTE]:-mycloud}"
-CLOUD_PATH="${WIZARD_SETTINGS[CLOUD_PATH]:-linuxguardian}"
+CLOUD_PATH="${WIZARD_SETTINGS[CLOUD_PATH]:-sysbackup}"
 CLOUD_PROVIDER="${WIZARD_SETTINGS[CLOUD_PROVIDER]:-}"
-RCLONE_CONFIG="/etc/linuxguardian/rclone.conf"
+RCLONE_CONFIG="/etc/sysbackup/rclone.conf"
 RCLONE_BW_LIMIT="${WIZARD_SETTINGS[RCLONE_BW_LIMIT]:-0}"
 RCLONE_TRANSFERS=4
 
 # ── Retention (GFS) ──────────────────────────────────────────
-KEEP_DAILY=${WIZARD_SETTINGS[KEEP_DAILY]}
-KEEP_WEEKLY=${WIZARD_SETTINGS[KEEP_WEEKLY]}
-KEEP_MONTHLY=${WIZARD_SETTINGS[KEEP_MONTHLY]}
-KEEP_YEARLY=${WIZARD_SETTINGS[KEEP_YEARLY]}
+KEEP_DAILY=${WIZARD_SETTINGS[KEEP_DAILY]:-}
+KEEP_WEEKLY=${WIZARD_SETTINGS[KEEP_WEEKLY]:-}
+KEEP_MONTHLY=${WIZARD_SETTINGS[KEEP_MONTHLY]:-}
+KEEP_YEARLY=${WIZARD_SETTINGS[KEEP_YEARLY]:-}
 
 # ── Resource Limits ───────────────────────────────────────────
-NICE_LEVEL=${WIZARD_SETTINGS[NICE_LEVEL]}
-IO_CLASS="${WIZARD_SETTINGS[IO_CLASS]}"
-CPU_QUOTA="${WIZARD_SETTINGS[CPU_QUOTA]}"
-IO_WEIGHT=${WIZARD_SETTINGS[IO_WEIGHT]}
-MEMORY_MAX="${WIZARD_SETTINGS[MEMORY_MAX]}"
+NICE_LEVEL=${WIZARD_SETTINGS[NICE_LEVEL]:-}
+IO_CLASS="${WIZARD_SETTINGS[IO_CLASS]:-}"
+CPU_QUOTA="${WIZARD_SETTINGS[CPU_QUOTA]:-}"
+IO_WEIGHT=${WIZARD_SETTINGS[IO_WEIGHT]:-}
+MEMORY_MAX="${WIZARD_SETTINGS[MEMORY_MAX]:-}"
 
 # ── Notifications ─────────────────────────────────────────────
-NOTIFY_ENABLED=${WIZARD_SETTINGS[NOTIFY_ENABLED]}
+NOTIFY_ENABLED=${WIZARD_SETTINGS[NOTIFY_ENABLED]:-}
 NOTIFY_ON_SUCCESS=true
 NOTIFY_ON_FAILURE=true
-NOTIFY_SOUND_ENABLED=${WIZARD_SETTINGS[NOTIFY_SOUND_ENABLED]}
-NOTIFY_SOUND_SUCCESS="/usr/share/linuxguardian/sounds/backup-success.oga"
-NOTIFY_SOUND_ERROR="/usr/share/linuxguardian/sounds/backup-error.oga"
+NOTIFY_SOUND_ENABLED=${WIZARD_SETTINGS[NOTIFY_SOUND_ENABLED]:-}
+NOTIFY_SOUND_SUCCESS="/usr/share/sysbackup/sounds/backup-success.oga"
+NOTIFY_SOUND_ERROR="/usr/share/sysbackup/sounds/backup-error.oga"
 
 # ── AI Features ───────────────────────────────────────────────
-ANOMALY_DETECTION=${WIZARD_SETTINGS[ANOMALY_DETECTION]}
+ANOMALY_DETECTION=${WIZARD_SETTINGS[ANOMALY_DETECTION]:-}
 ANOMALY_ZSCORE_WARN=2.0
 ANOMALY_ZSCORE_CRITICAL=3.0
-STORAGE_PREDICTION=${WIZARD_SETTINGS[STORAGE_PREDICTION]}
-INTEGRITY_VERIFY=${WIZARD_SETTINGS[INTEGRITY_VERIFY]}
-LOG_ANALYSIS=${WIZARD_SETTINGS[LOG_ANALYSIS]}
-HEALTH_SCORE=${WIZARD_SETTINGS[HEALTH_SCORE]}
+STORAGE_PREDICTION=${WIZARD_SETTINGS[STORAGE_PREDICTION]:-}
+INTEGRITY_VERIFY=${WIZARD_SETTINGS[INTEGRITY_VERIFY]:-}
+LOG_ANALYSIS=${WIZARD_SETTINGS[LOG_ANALYSIS]:-}
+HEALTH_SCORE=${WIZARD_SETTINGS[HEALTH_SCORE]:-}
 CONF
 
     chmod 640 "$config_file"
@@ -768,7 +768,7 @@ initialize_system() {
 
     # 1. Create data directories
     tui_info "Creating data directories..."
-    local data_dir="${WIZARD_SETTINGS[DATA_DIR]}"
+    local data_dir="${WIZARD_SETTINGS[DATA_DIR]:-}"
     mkdir -p "$data_dir"/{data,logs,repos,cache,config}
     chmod 750 "$data_dir"
     chmod 700 "$data_dir/repos"
@@ -776,48 +776,48 @@ initialize_system() {
 
     # 2. Write password file
     tui_info "Securing encryption password..."
-    echo "${WIZARD_SETTINGS[RESTIC_PASSWORD]}" > "${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]}"
-    chmod 600 "${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]}"
+    echo "${WIZARD_SETTINGS[RESTIC_PASSWORD]:-}" > "${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]:-}"
+    chmod 600 "${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]:-}"
     tui_success "Password file secured"
 
     # 3. Initialize restic repos
-    export RESTIC_PASSWORD_FILE="${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]}"
+    export RESTIC_PASSWORD_FILE="${WIZARD_SETTINGS[RESTIC_PASSWORD_FILE]:-}"
 
     tui_info "Initializing home backup repository..."
-    if restic init --repo "${WIZARD_SETTINGS[HOME_REPO]}" 2>/dev/null; then
-        tui_success "Home repo initialized: ${WIZARD_SETTINGS[HOME_REPO]}"
+    if restic init --repo "${WIZARD_SETTINGS[HOME_REPO]:-}" 2>/dev/null; then
+        tui_success "Home repo initialized: ${WIZARD_SETTINGS[HOME_REPO]:-}"
     else
         log_warn "Home repo may already be initialized"
     fi
 
     tui_info "Initializing system backup repository..."
-    if restic init --repo "${WIZARD_SETTINGS[SYSTEM_REPO]}" 2>/dev/null; then
-        tui_success "System repo initialized: ${WIZARD_SETTINGS[SYSTEM_REPO]}"
+    if restic init --repo "${WIZARD_SETTINGS[SYSTEM_REPO]:-}" 2>/dev/null; then
+        tui_success "System repo initialized: ${WIZARD_SETTINGS[SYSTEM_REPO]:-}"
     else
         log_warn "System repo may already be initialized"
     fi
 
     # 4. Copy exclude files if not present
-    local etc_dir="/etc/linuxguardian"
+    local etc_dir="/etc/sysbackup"
     if [[ ! -f "$etc_dir/exclude-home.txt" ]]; then
         cp "${SYSBACKUP_LIB_DIR}/../config/exclude-home.txt" "$etc_dir/" 2>/dev/null || \
-        cp "/etc/linuxguardian/exclude-home.txt.example" "$etc_dir/exclude-home.txt" 2>/dev/null || true
+        cp "/etc/sysbackup/exclude-home.txt.example" "$etc_dir/exclude-home.txt" 2>/dev/null || true
     fi
     if [[ ! -f "$etc_dir/exclude-system.txt" ]]; then
         cp "${SYSBACKUP_LIB_DIR}/../config/exclude-system.txt" "$etc_dir/" 2>/dev/null || \
-        cp "/etc/linuxguardian/exclude-system.txt.example" "$etc_dir/exclude-system.txt" 2>/dev/null || true
+        cp "/etc/sysbackup/exclude-system.txt.example" "$etc_dir/exclude-system.txt" 2>/dev/null || true
     fi
 
     # 5. Enable systemd timers
     tui_info "Enabling systemd timers..."
     if command -v systemctl &>/dev/null; then
         systemctl daemon-reload 2>/dev/null || true
-        systemctl enable linuxguardian-home.timer 2>/dev/null && tui_success "Home backup timer enabled" || log_warn "Could not enable home timer"
-        systemctl enable linuxguardian-system.timer 2>/dev/null && tui_success "System backup timer enabled" || log_warn "Could not enable system timer"
-        systemctl enable linuxguardian-monitor.timer 2>/dev/null && tui_success "Monitor timer enabled" || log_warn "Could not enable monitor timer"
-        systemctl start linuxguardian-home.timer 2>/dev/null || true
-        systemctl start linuxguardian-system.timer 2>/dev/null || true
-        systemctl start linuxguardian-monitor.timer 2>/dev/null || true
+        systemctl enable sysbackup-home.timer 2>/dev/null && tui_success "Home backup timer enabled" || log_warn "Could not enable home timer"
+        systemctl enable sysbackup-system.timer 2>/dev/null && tui_success "System backup timer enabled" || log_warn "Could not enable system timer"
+        systemctl enable sysbackup-monitor.timer 2>/dev/null && tui_success "Monitor timer enabled" || log_warn "Could not enable monitor timer"
+        systemctl start sysbackup-home.timer 2>/dev/null || true
+        systemctl start sysbackup-system.timer 2>/dev/null || true
+        systemctl start sysbackup-monitor.timer 2>/dev/null || true
     else
         log_warn "systemd not available — timers not configured"
     fi
@@ -840,11 +840,11 @@ wizard_complete() {
                 "Your system is now backup-proof!" \
                 "" \
                 "Quick commands:" \
-                "  linuxguardian status      — View backup dashboard" \
-                "  linuxguardian backup      — Run a backup now" \
-                "  linuxguardian snapshots   — List backup snapshots" \
-                "  linuxguardian restore     — Restore from backup" \
-                "  linuxguardian health      — View health report" \
+                "  sysbackup status      — View backup dashboard" \
+                "  sysbackup backup      — Run a backup now" \
+                "  sysbackup snapshots   — List backup snapshots" \
+                "  sysbackup restore     — Restore from backup" \
+                "  sysbackup health      — View health report" \
                 "" \
                 "Backups are scheduled automatically via systemd timers."
             ;;
@@ -852,11 +852,11 @@ wizard_complete() {
             printf "\n${CLR_GREEN}${CLR_BOLD}  🎉 Setup Complete!${CLR_RESET}\n\n"
             printf "  Your system is now backup-proof!\n\n"
             printf "  Quick commands:\n"
-            printf "    ${CLR_CYAN}linuxguardian status${CLR_RESET}      — View backup dashboard\n"
-            printf "    ${CLR_CYAN}linuxguardian backup${CLR_RESET}      — Run a backup now\n"
-            printf "    ${CLR_CYAN}linuxguardian snapshots${CLR_RESET}   — List backup snapshots\n"
-            printf "    ${CLR_CYAN}linuxguardian restore${CLR_RESET}     — Restore from backup\n"
-            printf "    ${CLR_CYAN}linuxguardian health${CLR_RESET}      — View health report\n\n"
+            printf "    ${CLR_CYAN}sysbackup status${CLR_RESET}      — View backup dashboard\n"
+            printf "    ${CLR_CYAN}sysbackup backup${CLR_RESET}      — Run a backup now\n"
+            printf "    ${CLR_CYAN}sysbackup snapshots${CLR_RESET}   — List backup snapshots\n"
+            printf "    ${CLR_CYAN}sysbackup restore${CLR_RESET}     — Restore from backup\n"
+            printf "    ${CLR_CYAN}sysbackup health${CLR_RESET}      — View health report\n\n"
             printf "  Backups are scheduled automatically via systemd timers.\n"
             ;;
     esac
@@ -865,8 +865,8 @@ wizard_complete() {
     if tui_confirm "Run first home backup now?" "yes"; then
         echo ""
         log_info "Starting first home backup..."
-        /usr/local/bin/linuxguardian run --home --force 2>&1 || \
-            log_warn "First backup had issues. Check: linuxguardian logs --last 1"
+        /usr/local/bin/sysbackup run --home --force 2>&1 || \
+            log_warn "First backup had issues. Check: sysbackup logs --last 1"
     fi
 }
 

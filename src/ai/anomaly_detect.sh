@@ -1,23 +1,27 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — AI Anomaly Detection Module
+#  SystemBackup — AI Anomaly Detection Module
 #  Z-score based backup size & file count anomaly detection.
 #  Detects: ransomware (sudden size spike), data loss (sudden drop)
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_ANOMALY_DETECT_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_ANOMALY_DETECT_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly ANOMALY_MODULE_VERSION="1.0.0"
-readonly BACKUP_SIZES_LOG="${DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
-readonly FILE_COUNTS_LOG="${DATA_DIR:-/var/lib/linuxguardian}/data/file_counts.log"
-readonly ANOMALY_HISTORY_SAMPLES=30
+ANOMALY_MODULE_VERSION="1.0.0"
+BACKUP_SIZES_LOG="${DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
+FILE_COUNTS_LOG="${DATA_DIR:-/var/lib/sysbackup}/data/file_counts.log"
+ANOMALY_HISTORY_SAMPLES=30
 
 # ── Configurable Thresholds ──────────────────────────────────
-# Can be set in linuxguardian.conf or environment
+# Can be set in sysbackup.conf or environment
 ANOMALY_ZSCORE_WARN="${ANOMALY_ZSCORE_WARN:-2.0}"
 ANOMALY_ZSCORE_CRITICAL="${ANOMALY_ZSCORE_CRITICAL:-3.0}"
 
@@ -65,7 +69,7 @@ _compute_zscore() {
     }
     {
         # Column 1 = timestamp, Column 2 = value
-        val = $2 + 0
+        val = $8 + 0
         if (val >= 0) {
             values[n] = val
             sum += val
@@ -189,7 +193,7 @@ check_anomaly() {
         log_debug "anomaly_detect: Size within normal range (Z=${zscore})"
     fi
 
-    echo "${level} ${zscore} ${mean} ${pct_change}"
+    echo "${level}|${zscore}|${mean}|${pct_change}"
     return 0
 }
 
@@ -230,7 +234,7 @@ check_file_count_anomaly() {
         log_debug "anomaly_detect: File count within normal range (Z=${zscore})"
     fi
 
-    echo "${level} ${zscore} ${mean} ${pct_change}"
+    echo "${level}|${zscore}|${mean}|${pct_change}"
     return 0
 }
 

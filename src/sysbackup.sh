@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Main Backup Orchestrator
+#  SystemBackup — Main Backup Orchestrator
 #  This is the core backup pipeline that runs all phases:
 #    Pre-flight → Idle Check → Backup → AI Analysis →
 #    Cloud Sync → Retention → Notification
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
 
 # ── Resolve library path ──────────────────────────────────────
-SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}"
+SYSBACKUP_LIB_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}"
 
 # ── Source all modules ────────────────────────────────────────
 source "${SYSBACKUP_LIB_DIR}/modules/utils.sh"
@@ -208,6 +208,7 @@ phase_ai_analysis() {
     fi
 
     log_section "Phase 4: AI Analysis"
+    if check_command gum; then gum spin --spinner points --title " Running Intelligence Suite..." -- sleep 2; fi
 
     # Initialize AI result globals
     ANOMALY_LEVEL="OK"
@@ -263,7 +264,7 @@ phase_ai_analysis() {
     # 4d. Log Analysis
     if [[ "${LOG_ANALYSIS:-true}" == "true" && -n "${SYSBACKUP_LOG_FILE:-}" ]]; then
         log_info "Running log analysis..."
-        analyze_log "$SYSBACKUP_LOG_FILE" 2>/dev/null || true
+        analyze_log "$SYSBACKUP_LOG_FILE" || true
         detect_error_trend 2>/dev/null || true
     fi
 
@@ -287,6 +288,7 @@ phase_cloud_sync() {
     fi
 
     log_section "Phase 5: Cloud Sync"
+    if check_command gum; then gum spin --spinner pulse --title " Preparing Cloud Tunnel..." -- sleep 2; fi
 
     local sync_success=true
     local start_time
@@ -387,7 +389,7 @@ phase_notification() {
         fi
     else
         if [[ "${NOTIFY_ON_FAILURE:-true}" == "true" ]]; then
-            send_failure_notification "Backup failed. Check logs: ${SYSBACKUP_LOG_FILE:-/var/lib/linuxguardian/logs/}"
+            send_failure_notification "Backup failed. Check logs: ${SYSBACKUP_LOG_FILE:-/var/lib/sysbackup/logs/}"
             log_info "Failure notification sent"
         fi
     fi
@@ -401,7 +403,7 @@ phase_cleanup() {
     rotate_logs
 
     # Update last backup timestamp marker
-    touch "${DATA_DIR:-/var/lib/linuxguardian}/data/last_backup_timestamp"
+    touch "${DATA_DIR:-/var/lib/sysbackup}/data/last_backup_timestamp"
 
     # Release lock
     lock_release
@@ -485,7 +487,15 @@ run_backup_pipeline() {
     log_info "Total duration: $(human_duration "$pipeline_duration")"
 
     if [[ "$pipeline_success" == "true" ]]; then
+        
+    log_section "Pipeline Complete"
+    if check_command gum; then
+        gum style --border double --border-foreground 46 --padding "1 3" --margin "1 0" --bold --width 82 \
+            "🎉 BACKUP PIPELINE SUCCESSFUL" "Total Duration: $(human_duration "$(( $(date +%s) - BACKUP_START_TIME ))")" "Health Score: ${HEALTH_SCORE_VALUE:-100}/100"
+    else
         log_success "Backup pipeline completed successfully! 🎉"
+    fi
+
         return 0
     else
         log_error "Backup pipeline completed with errors"
@@ -512,7 +522,7 @@ run_metrics_collection() {
 
 get_mean_duration() {
     local backup_type="$1"
-    local history_file="${DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
+    local history_file="${DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
 
     if [[ ! -f "$history_file" ]]; then
         echo 0
@@ -537,14 +547,14 @@ get_mean_duration() {
 
 get_last_backup_size() {
     local repo_path="$1"
-    local history_file="${DATA_DIR:-/var/lib/linuxguardian}/data/backup_sizes.log"
+    local history_file="${DATA_DIR:-/var/lib/sysbackup}/data/backup_sizes.log"
 
     if [[ ! -f "$history_file" ]]; then
         echo 0
         return
     fi
 
-    tail -1 "$history_file" | cut -d',' -f3
+    tail -1 "$history_file" | cut -d',' -f8
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -571,7 +581,7 @@ get_latest_snapshot_id() {
 #  ENTRY POINT (when called directly)
 # ═══════════════════════════════════════════════════════════════
 
-# This file is primarily sourced by linuxguardian-cli.sh
+# This file is primarily sourced by sysbackup-cli.sh
 # But can be run directly for testing:
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     setup_traps

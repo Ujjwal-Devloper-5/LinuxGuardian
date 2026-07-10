@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Integrity Verification Module
+#  SystemBackup — Integrity Verification Module
 #  3-tier rotating checksum verification system.
 #  Tier 1: Every backup  — repo structure check
 #  Tier 2: Weekly rotation — read-data subset (1/7 per day)
 #  Tier 3: Monthly        — full read-data + test restore
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_INTEGRITY_VERIFY_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_INTEGRITY_VERIFY_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly INTEGRITY_MODULE_VERSION="1.0.0"
-readonly VERIFICATION_HISTORY="${DATA_DIR:-/var/lib/linuxguardian}/data/verification_history.log"
-readonly VERIFICATION_RESTORE_DIR="${DATA_DIR:-/var/lib/linuxguardian}/cache/verify_restore"
+INTEGRITY_MODULE_VERSION="1.0.0"
+VERIFICATION_HISTORY="${DATA_DIR:-/var/lib/sysbackup}/data/verification_history.log"
+VERIFICATION_RESTORE_DIR="${DATA_DIR:-/var/lib/sysbackup}/cache/verify_restore"
 
 # ── Configurable Parameters ──────────────────────────────────
 VERIFY_TIER2_DAY_OF_WEEK="${VERIFY_TIER2_DAY_OF_WEEK:-}"  # Empty = auto (use current day)
@@ -309,7 +313,7 @@ run_verification() {
     local tier
     tier=$(_determine_tier)
 
-    log_info "integrity: Auto-selected tier ${tier} for today ($(date +%A, %B\ %d))"
+    log_info "integrity: Auto-selected tier ${tier} for today ($(date "+%A, %B %d"))"
 
     case "$tier" in
         1) verify_tier1 "$repo_path" ;;
@@ -334,7 +338,7 @@ get_verification_report() {
     if [[ ! -f "$VERIFICATION_HISTORY" ]] || [[ ! -s "$VERIFICATION_HISTORY" ]]; then
         echo ""
         echo "  🔍 No verification history available yet."
-        echo "     Run 'linuxguardian verify' to perform a check."
+        echo "     Run 'sysbackup verify' to perform a check."
         echo ""
         return 0
     fi

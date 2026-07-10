@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — AI Storage Prediction Module
+#  SystemBackup — AI Storage Prediction Module
 #  Linear regression to predict storage exhaustion.
 #  Uses least-squares in awk + optional Python weighted regression.
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_PREDICT_STORAGE_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_PREDICT_STORAGE_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly PREDICT_MODULE_VERSION="1.0.0"
-readonly STORAGE_TREND_LOG="${DATA_DIR:-/var/lib/linuxguardian}/data/storage_trend.log"
-readonly CLOUD_TREND_LOG="${DATA_DIR:-/var/lib/linuxguardian}/data/cloud_storage_trend.log"
-readonly HELPERS_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/helpers"
-readonly STORAGE_PREDICTOR_PY="${HELPERS_DIR}/storage_predictor.py"
+PREDICT_MODULE_VERSION="1.0.0"
+STORAGE_TREND_LOG="${DATA_DIR:-/var/lib/sysbackup}/data/storage_trend.log"
+CLOUD_TREND_LOG="${DATA_DIR:-/var/lib/sysbackup}/data/cloud_storage_trend.log"
+HELPERS_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/helpers"
+STORAGE_PREDICTOR_PY="${HELPERS_DIR}/storage_predictor.py"
 
 # ── Configurable Thresholds (days until full) ─────────────────
 STORAGE_WARN_DAYS="${STORAGE_WARN_DAYS:-60}"

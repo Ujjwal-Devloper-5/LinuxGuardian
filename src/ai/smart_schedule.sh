@@ -1,22 +1,26 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — AI Smart Scheduling Module
+#  SystemBackup — AI Smart Scheduling Module
 #  Finds optimal backup windows by analyzing system idle patterns.
 #  Uses EWMA smoothing + Python helper for time-series analysis.
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_SMART_SCHEDULE_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_SMART_SCHEDULE_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly SCHEDULE_MODULE_VERSION="1.0.0"
-readonly CPU_STATS_FILE="${DATA_DIR:-/var/lib/linuxguardian}/data/cpu_stats.csv"
-readonly IO_STATS_FILE="${DATA_DIR:-/var/lib/linuxguardian}/data/io_stats.csv"
-readonly SCHEDULE_DATA_FILE="${DATA_DIR:-/var/lib/linuxguardian}/data/schedule_history.csv"
-readonly HELPERS_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/helpers"
-readonly SCHEDULE_ANALYZER_PY="${HELPERS_DIR}/schedule_analyzer.py"
+SCHEDULE_MODULE_VERSION="1.0.0"
+CPU_STATS_FILE="${DATA_DIR:-/var/lib/sysbackup}/data/cpu_stats.csv"
+IO_STATS_FILE="${DATA_DIR:-/var/lib/sysbackup}/data/io_stats.csv"
+SCHEDULE_DATA_FILE="${DATA_DIR:-/var/lib/sysbackup}/data/schedule_history.csv"
+HELPERS_DIR="${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/helpers"
+SCHEDULE_ANALYZER_PY="${HELPERS_DIR}/schedule_analyzer.py"
 
 # ── Configurable Parameters ──────────────────────────────────
 SCHEDULE_EWMA_ALPHA="${SCHEDULE_EWMA_ALPHA:-0.2}"

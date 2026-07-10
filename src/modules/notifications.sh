@@ -1,26 +1,30 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-#  LinuxGuardian — Notifications Module
+#  SystemBackup — Notifications Module
 #  Desktop notifications, sound playback, and backup reports.
 #  Handles X11/Wayland, root→user session bridging, PipeWire/
 #  PulseAudio detection, and headless fallback via wall(1).
 # ═══════════════════════════════════════════════════════════════
 
-set -euo pipefail
+set -o pipefail
+
+if [[ -n "${_SYSBACKUP_NOTIFICATIONS_SH_LOADED:-}" ]]; then return 0; fi
+_SYSBACKUP_NOTIFICATIONS_SH_LOADED=1
+
 
 # ── Source shared utilities ───────────────────────────────────
-source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/linuxguardian}/modules/utils.sh"
+source "${SYSBACKUP_LIB_DIR:-/usr/local/lib/sysbackup}/modules/utils.sh"
 
 # ── Module Constants ──────────────────────────────────────────
-readonly NOTIFICATIONS_VERSION="1.0.0"
-readonly DEFAULT_NOTIFY_TIMEOUT=10000  # 10 seconds in milliseconds
-readonly APP_NAME="LinuxGuardian"
+NOTIFICATIONS_VERSION="1.0.0"
+DEFAULT_NOTIFY_TIMEOUT=10000  # 10 seconds in milliseconds
+APP_NAME="SystemBackup"
 
 # ── Notification Icons ────────────────────────────────────────
-readonly ICON_SUCCESS="dialog-information"
-readonly ICON_ERROR="dialog-error"
-readonly ICON_WARNING="dialog-warning"
-readonly ICON_BACKUP="drive-harddisk"
+ICON_SUCCESS="dialog-information"
+ICON_ERROR="dialog-error"
+ICON_WARNING="dialog-warning"
+ICON_BACKUP="drive-harddisk"
 
 # ═══════════════════════════════════════════════════════════════
 #  SESSION DETECTION
